@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0757cf" />
+    <meta
+      name="description"
+      content="Skyball — collect the key cube, unlock the receiver, and cross twenty suspended arenas."
+    />
+    <title>Skyball</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main
+      id="skyball-game"
+      tabindex="0"
+      aria-label="Skyball marble game. Use W A S D or arrow keys to tilt the board."
+    >
+      <div class="sky-gradient" aria-hidden="true"></div>
+      <div class="cloud cloud-a" aria-hidden="true"></div>
+      <div class="cloud cloud-b" aria-hidden="true"></div>
+      <div class="cloud cloud-c" aria-hidden="true"></div>
+      <canvas id="game-canvas" aria-label="Skyball 3D game board"></canvas>
+      <div class="vignette" aria-hidden="true"></div>
+
+      <section class="retro-console" aria-label="Game status">
+        <div class="retro-display">
+          <span id="level-pill" class="level-pill">LEVEL 01 / 20</span>
+          <span id="status-pill" class="status-pill" aria-live="polite">Find the key cube</span>
+          <div class="level-track" aria-hidden="true">
+            <div id="level-progress" class="level-progress"></div>
+          </div>
+        </div>
+        <div class="retro-controls">
+          <button id="restart-btn" class="chrome-btn hidden" type="button" aria-label="Restart level" title="Restart level">
+            <svg class="restart-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7.6 6.5A8 8 0 1 1 4.2 13.4" />
+              <path class="restart-arrowhead" d="M2.6 7.2 8.4 3.1 7.8 10.2Z" />
+            </svg>
+          </button>
+          <button id="menu-btn" class="chrome-btn hidden" type="button" aria-label="Open menu" title="Menu">☰</button>
+        </div>
+      </section>
+
+      <div id="countdown" class="countdown" aria-live="off">30.0</div>
+
+      <div id="objective-guide" class="objective-guide hidden" aria-live="polite">
+        <span id="key-step" class="objective-step is-active">01 FIND KEY CUBE</span>
+        <span class="objective-arrow" aria-hidden="true">&rarr;</span>
+        <span id="goal-step" class="objective-step is-locked">02 ENTER RECEIVER</span>
+      </div>
+
+      <button id="music-btn" class="music-toggle" type="button" aria-label="Mute music" title="Mute music">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 18V6l9-2v12" />
+          <circle cx="6.5" cy="18" r="2.5" />
+          <circle cx="15.5" cy="16" r="2.5" />
+        </svg>
+      </button>
+      <audio
+        id="bg-music"
+        loop
+        preload="auto"
+        playsinline
+      ></audio>
+
+      <div id="control-hint" class="control-hint hidden">WASD / arrows to tilt · R to restart</div>
+
+      <section id="intro" class="overlay">
+        <div class="dialog" data-panel-label="SKYBALL // SYSTEM 01">
+          <div class="marble-icon" aria-hidden="true"></div>
+          <h1>SKY//BALL</h1>
+          <p>Twenty suspended stages. First collect the floating key cube to unlock the receiver, then reach the glowing destination before time expires.</p>
+          <button id="start-btn" class="primary-btn" type="button">ENTER LEVEL 01</button>
+        </div>
+      </section>
+
+      <section id="complete" class="overlay hidden">
+        <div class="dialog" data-panel-label="STAGE STATUS // CLEAR">
+          <div class="result-icon" aria-hidden="true">✓</div>
+          <h2 id="complete-title">Level complete</h2>
+          <p id="complete-copy">Receiver locked. Ready for the next board.</p>
+          <button id="again-btn" class="primary-btn" type="button">NEXT LEVEL</button>
+        </div>
+      </section>
+
+      <section id="failed" class="overlay hidden">
+        <div class="dialog" data-panel-label="STAGE STATUS // RETRY">
+          <div id="failed-icon" class="result-icon fall-icon" aria-hidden="true">↓</div>
+          <h2 id="failed-title">Marble lost</h2>
+          <p id="failed-copy">The marble fell from the board.</p>
+          <button id="retry-btn" class="primary-btn" type="button">TRY AGAIN</button>
+        </div>
+      </section>
+
+      <section id="menu-overlay" class="overlay hidden">
+        <div class="dialog menu-dialog" data-panel-label="SKYBALL // QUICK MENU">
+          <div class="menu-glyph" aria-hidden="true">◇</div>
+          <h2>SYSTEM MENU</h2>
+          <p>Level controls</p>
+          <div class="menu-actions">
+            <button id="resume-btn" class="primary-btn" type="button">RESUME</button>
+            <button id="menu-restart-btn" class="secondary-btn" type="button">RESTART LEVEL</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="loading" class="loading" role="status">Loading 3D board…</div>
+    </main>
+
+    <script type="module" src="./src/game.js"></script>
+  </body>
+</html>
