@@ -271,14 +271,15 @@ function setLevelParameters() {
 }
 
 function updateCameraFraming() {
-  const width = Math.max(root.clientWidth, 1);
-  const height = Math.max(root.clientHeight, 1);
+  const { width: measuredWidth, height: measuredHeight } = root.getBoundingClientRect();
+  const width = Math.max(measuredWidth, 1);
+  const height = Math.max(measuredHeight, 1);
   const aspect = width / height;
   const levelScale = 1 + (boardRadius - 4.55) * 0.16;
   // A perspective camera's vertical field of view stays fixed as the viewport
   // narrows, which crops the disc on phones. Pull back only in portrait layouts
   // so the entire playable rim remains visible without changing desktop scale.
-  const portraitScale = THREE.MathUtils.clamp(0.88 / aspect, 1, 1.56);
+  const portraitScale = THREE.MathUtils.clamp(1.02 / aspect, 1, 1.95);
   camera.position.set(0, 12.2 * levelScale * portraitScale, 9.2 * levelScale * portraitScale);
   camera.lookAt(0, 0, 0);
 }
@@ -1845,8 +1846,9 @@ function advanceLevel() {
 }
 
 function resize() {
-  const width = root.clientWidth;
-  const height = root.clientHeight;
+  const { width: measuredWidth, height: measuredHeight } = root.getBoundingClientRect();
+  const width = Math.max(Math.round(measuredWidth), 1);
+  const height = Math.max(Math.round(measuredHeight), 1);
   camera.aspect = width / height;
   updateCameraFraming();
   camera.updateProjectionMatrix();
@@ -1911,6 +1913,9 @@ window.addEventListener("blur", () => {
   setRollingVolume(0);
 });
 window.addEventListener("resize", resize);
+window.visualViewport?.addEventListener("resize", resize);
+const rootResizeObserver = new ResizeObserver(resize);
+rootResizeObserver.observe(root);
 
 canvas.addEventListener("pointerdown", (event) => {
   if (event.cancelable) event.preventDefault();
