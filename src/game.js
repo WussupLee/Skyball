@@ -34,6 +34,7 @@ const restartButton = root.querySelector("#restart-btn");
 const menuButton = root.querySelector("#menu-btn");
 const resumeButton = root.querySelector("#resume-btn");
 const menuRestartButton = root.querySelector("#menu-restart-btn");
+const menuMainMenuButton = root.querySelector("#menu-main-menu-btn");
 const startButton = root.querySelector("#start-btn");
 const retryButton = root.querySelector("#retry-btn");
 const againButton = root.querySelector("#again-btn");
@@ -45,9 +46,7 @@ const keyStep = root.querySelector("#key-step");
 const goalStep = root.querySelector("#goal-step");
 const completeTitle = root.querySelector("#complete-title");
 const completeCopy = root.querySelector("#complete-copy");
-const failedIcon = root.querySelector("#failed-icon");
 const failedTitle = root.querySelector("#failed-title");
-const failedCopy = root.querySelector("#failed-copy");
 const countdown = root.querySelector("#countdown");
 const musicButton = root.querySelector("#music-btn");
 const backgroundMusic = root.querySelector("#bg-music");
@@ -1193,6 +1192,7 @@ function resetLevel() {
   buildLevel();
   state = "playing";
   paused = false;
+  runTracker.resume(performance.now());
   menuOverlay.classList.add("hidden");
   statusPill.textContent = "Find the key cube · receiver locked";
   root.scrollTop = 0;
@@ -1345,6 +1345,8 @@ function openLeaderboards(origin = intro) {
   leaderboardReturnOverlay = origin;
   [intro, complete, failed, menuOverlay, runResults, nameEntry].forEach((overlay) => overlay.classList.add("hidden"));
   leaderboardsOverlay.classList.remove("hidden");
+  root.scrollTop = 0;
+  root.scrollLeft = 0;
   leaderboardTab = "monthly";
   leaderboardCurrentPage = 1;
   leaderboardTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.tab === leaderboardTab));
@@ -1354,6 +1356,8 @@ function openLeaderboards(origin = intro) {
 function closeLeaderboards() {
   leaderboardsOverlay.classList.add("hidden");
   leaderboardReturnOverlay.classList.remove("hidden");
+  root.scrollTop = 0;
+  root.scrollLeft = 0;
   if (leaderboardReturnOverlay === menuOverlay) resumeButton.focus();
   else leaderboardReturnOverlay.querySelector("button")?.focus();
 }
@@ -1609,6 +1613,7 @@ function updateUnlock(delta) {
 function beginGoal() {
   if (state !== "playing") return;
   recordLevelSplit();
+  runTracker.pause(performance.now());
   state = "goal";
   stateElapsed = 0;
   marbleVelocity.multiplyScalar(0.12);
@@ -1808,9 +1813,8 @@ function updateFall(delta) {
 
   if (marble.position.y < -4.5 || stateElapsed > 2.1) {
     state = "overlay";
-    failedIcon.textContent = "↓";
-    failedTitle.textContent = "Marble lost";
-    failedCopy.textContent = "The marble fell from the board.";
+    runTracker.pause(performance.now());
+    failedTitle.textContent = "MARBLE LOST";
     failed.classList.remove("hidden");
   }
 }
@@ -1855,8 +1859,8 @@ function updateGoal(delta) {
       completeRun();
       return;
     } else {
-      completeTitle.textContent = "Level complete";
-      completeCopy.textContent = "Gate traversed. Ready for the next board.";
+      completeTitle.textContent = "LEVEL COMPLETE";
+      completeCopy.textContent = "GATE TRAVERSED. READY FOR THE NEXT BOARD.";
       againButton.textContent = "NEXT LEVEL";
     }
     complete.classList.remove("hidden");
@@ -1994,9 +1998,8 @@ function updateShatter(delta) {
 
   if (stateElapsed > 1.75) {
     state = "overlay";
-    failedIcon.textContent = "×";
+    runTracker.pause(performance.now());
     failedTitle.textContent = "TIME // OUT";
-    failedCopy.textContent = "The suspended stage lost structural lock.";
     failed.classList.remove("hidden");
   }
 }
@@ -2463,6 +2466,7 @@ function toggleMusic() {
 function openMenu() {
   if (state !== "playing") return;
   paused = true;
+  runTracker.pause(performance.now());
   keys.clear();
   touchTilt.set(0, 0);
   setRollingVolume(0);
@@ -2472,6 +2476,7 @@ function openMenu() {
 
 function closeMenu() {
   paused = false;
+  runTracker.resume(performance.now());
   menuOverlay.classList.add("hidden");
   root.scrollTop = 0;
   root.scrollLeft = 0;
@@ -2485,6 +2490,7 @@ function startGame() {
   paused = false;
   statusPill.textContent = "Find the key cube · receiver locked";
   if (level === 1 && !runTracker.active) startNewRun();
+  else runTracker.resume(performance.now());
   startAudio();
   root.scrollTop = 0;
   root.scrollLeft = 0;
@@ -2607,6 +2613,7 @@ menuButton.addEventListener("click", openMenu);
 resumeButton.addEventListener("click", closeMenu);
 menuRestartButton.addEventListener("click", resetLevel);
 menuLeaderboardButton.addEventListener("click", () => openLeaderboards(menuOverlay));
+menuMainMenuButton.addEventListener("click", returnToMainMenu);
 musicButton.addEventListener("click", toggleMusic);
 closeLeaderboardsButton.addEventListener("click", closeLeaderboards);
 

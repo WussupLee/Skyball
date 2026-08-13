@@ -799,8 +799,8 @@ button:focus-visible,
 }
 
 .leaderboard-list {
-  height: min(405px, calc(100dvh - 370px));
-  min-height: 216px;
+  height: min(360px, calc(100dvh - 430px));
+  min-height: 150px;
   overflow-y: auto;
   scrollbar-color: #52cfe1 #07183d;
   scrollbar-width: thin;
@@ -1229,6 +1229,273 @@ button:focus-visible,
   box-shadow: inset 0 4px 9px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
+/* Unified interface components. Every panel follows the same diagonal corner
+   rhythm, vertical display pinstripes, extruded controls, and SVG icon set. */
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.retro-console,
+.retro-display,
+.music-toggle,
+.control-hint {
+  border-radius: 11px 27px 11px 27px;
+}
+
+.dialog {
+  border-radius: 14px 34px 14px 34px;
+}
+
+.dialog::before {
+  border-radius: 8px 20px 8px 20px;
+}
+
+.dialog-screen,
+.results-screen,
+.name-screen,
+.leaderboard-screen {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #0e214b;
+  border-radius: 11px 27px 11px 27px;
+  color: #dfffff;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(78, 218, 255, 0.055) 11px 12px),
+    linear-gradient(180deg, var(--screen-top), var(--screen-bottom));
+  box-shadow:
+    inset 0 8px 18px rgba(0, 0, 0, 0.62),
+    inset 0 -8px 16px rgba(0, 0, 0, 0.48),
+    0 2px 0 rgba(228, 254, 255, 0.88);
+}
+
+.dialog-screen h1,
+.dialog-screen h2,
+.dialog-screen p {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dialog-screen h1,
+.dialog-screen h2 {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  padding: 13px 82px 6px 20px;
+  text-transform: uppercase;
+}
+
+.dialog-screen p {
+  min-height: 72px;
+  padding: 8px 20px 18px;
+  text-transform: none;
+}
+
+.dialog-screen-compact h2 {
+  min-height: 92px;
+  padding: 20px;
+}
+
+.menu-dialog .dialog-screen h2 {
+  padding-right: 20px;
+}
+
+.menu-dialog .dialog-screen p {
+  min-height: 62px;
+  text-transform: uppercase;
+}
+
+.results-dialog > .dialog-screen,
+.name-dialog > .dialog-screen {
+  border-radius: 11px 27px 11px 27px;
+}
+
+.results-dialog > .dialog-screen h2,
+.name-dialog > .dialog-screen h2 {
+  padding-right: 82px;
+}
+
+.results-screen,
+.name-screen {
+  margin-top: 10px;
+  border-radius: 11px 27px 11px 27px;
+}
+
+.leaderboard-screen {
+  border-radius: 11px 27px 11px 27px;
+}
+
+.marble-icon,
+.result-icon {
+  top: 77px;
+}
+
+.result-icon svg {
+  width: 23px;
+  height: 23px;
+  fill: currentcolor;
+}
+
+.menu-glyph {
+  display: none;
+}
+
+.chrome-btn > svg {
+  width: 21px;
+  height: 21px;
+  fill: currentcolor;
+}
+
+.music-toggle svg {
+  fill: currentcolor;
+  stroke: none;
+}
+
+.primary-btn,
+.secondary-btn,
+.compact-btn,
+.leaderboard-tab {
+  position: relative;
+  min-height: 50px;
+  padding: 0 55px 0 20px;
+  border: 3px solid var(--hard-outline);
+  border-radius: 10px 25px 10px 25px;
+  color: #18345d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-align: left;
+  text-shadow: 0 1px 0 #fff;
+  cursor: pointer;
+  background: linear-gradient(180deg, #f8ffff 0%, #d4e8eb 22%, #89a2b5 55%, #526a8d 74%, #d3e9ed 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(225, 253, 255, 0.78),
+    inset 0 3px 2px rgba(255, 255, 255, 0.7),
+    inset 0 -7px 9px rgba(10, 35, 75, 0.4),
+    0 0 0 2px #78aabc,
+    0 4px 0 #1a345b,
+    0 9px 17px rgba(1, 11, 47, 0.3);
+}
+
+.primary-btn {
+  color: var(--ink);
+  background: linear-gradient(180deg, #f7ffff 0%, #a8edf1 18%, #43c9dc 48%, #3875ad 70%, #bce7ec 100%);
+}
+
+.primary-btn::after,
+.secondary-btn::after {
+  display: none;
+}
+
+.button-icon {
+  position: absolute;
+  z-index: 1;
+  right: 9px;
+  top: 50%;
+  width: 31px;
+  height: 31px;
+  padding: 8px;
+  border: 1px solid #102853;
+  border-radius: 50%;
+  fill: #072458;
+  color: #072458;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 35% 28%, #fff, #75e8ed 30%, #3578b6 68%, #132553 100%);
+  box-shadow: inset 0 0 0 2px rgba(224, 254, 255, 0.7), 0 0 0 2px #79b2c3, 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+.compact-btn:hover,
+.leaderboard-tab:hover {
+  color: #062754;
+  filter: brightness(1.1) saturate(1.06);
+  text-shadow: 0 1px 0 #fff;
+}
+
+.primary-btn:active,
+.secondary-btn:active,
+.compact-btn:active,
+.leaderboard-tab:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 3px 8px rgba(5, 24, 63, 0.42), 0 0 0 2px #78aabc, 0 2px 0 #1a345b;
+}
+
+.leaderboard-header.dialog-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: stretch;
+}
+
+.leaderboard-header.dialog-screen h2 {
+  min-width: 0;
+  padding-right: 18px;
+}
+
+.leaderboard-header .compact-btn {
+  width: auto;
+  min-width: 0;
+  height: calc(100% - 12px);
+  align-self: center;
+  margin-right: 7px;
+  border: 3px solid var(--hard-outline);
+  border-radius: 9px 22px 9px 22px;
+  color: #18345d;
+  background: linear-gradient(180deg, #f8ffff 0%, #d4e8eb 22%, #89a2b5 55%, #526a8d 74%, #d3e9ed 100%);
+}
+
+.leaderboard-tabs {
+  gap: 9px;
+  margin: 13px 2px 15px;
+}
+
+.leaderboard-tab {
+  min-height: 47px;
+  border: 3px solid var(--hard-outline);
+  border-radius: 9px 22px 9px 22px;
+}
+
+.leaderboard-tab.is-active {
+  color: #05265a;
+  border-color: var(--hard-outline);
+  background: linear-gradient(180deg, #f4ffff, #9beef4 23%, #3eaccb 57%, #32629d 76%, #c7eef2);
+  text-shadow: 0 1px 0 #fff, 0 0 8px rgba(85, 234, 255, 0.55);
+}
+
+.leaderboard-tab .button-icon {
+  width: 28px;
+  height: 28px;
+  padding: 7px;
+}
+
+.leaderboard-pagination {
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.leaderboard-pagination .compact-btn {
+  min-height: 43px;
+  border: 3px solid var(--hard-outline);
+  border-radius: 9px 22px 9px 22px;
+  color: #18345d;
+  background: linear-gradient(180deg, #f8ffff 0%, #d4e8eb 22%, #89a2b5 55%, #526a8d 74%, #d3e9ed 100%);
+}
+
+.leaderboard-pagination button:disabled {
+  opacity: 0.42;
+  filter: saturate(0.3);
+  cursor: default;
+}
+
+.leaderboard-pagination button:disabled:active {
+  transform: none;
+}
+
 @media (max-width: 600px) {
   #skyball-game {
     min-height: 400px;
@@ -1349,6 +1616,40 @@ button:focus-visible,
     font-size: 21px;
   }
 
+  .dialog-screen h1,
+  .dialog-screen h2 {
+    min-height: 57px;
+    padding: 12px 62px 6px 15px;
+  }
+
+  .dialog-screen p {
+    min-height: 64px;
+    padding: 7px 15px 14px;
+    font-size: 10px;
+  }
+
+  .dialog-screen-compact h2,
+  .menu-dialog .dialog-screen h2 {
+    padding-right: 15px;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .compact-btn,
+  .leaderboard-tab {
+    min-height: 46px;
+    padding-right: 47px;
+    padding-left: 15px;
+    font-size: 8px;
+  }
+
+  .button-icon {
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    padding: 7px;
+  }
+
   .marble-icon,
   .result-icon,
   .menu-glyph {
@@ -1365,15 +1666,32 @@ button:focus-visible,
     font-size: 17px;
   }
 
+  .leaderboard-header.dialog-screen {
+    grid-template-columns: minmax(0, 1fr) 103px;
+  }
+
+  .leaderboard-header.dialog-screen h2 {
+    padding-right: 10px;
+  }
+
   .leaderboard-tab {
-    min-height: 31px;
-    font-size: 6px;
+    min-height: 41px;
+    padding-right: 34px;
+    padding-left: 10px;
+    font-size: 6.5px;
     letter-spacing: 0.05em;
   }
 
+  .leaderboard-tab .button-icon {
+    right: 6px;
+    width: 23px;
+    height: 23px;
+    padding: 6px;
+  }
+
   .leaderboard-list {
-    height: calc(100dvh - 510px);
-    min-height: 180px;
+    height: calc(100dvh - 480px);
+    min-height: 110px;
   }
 
   .leaderboard-row {

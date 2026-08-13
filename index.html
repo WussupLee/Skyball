@@ -17,6 +17,19 @@
       tabindex="0"
       aria-label="Skyball marble game. Use W A S D or arrow keys to tilt the board."
     >
+      <svg class="icon-sprite" aria-hidden="true">
+        <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></symbol>
+        <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" /></symbol>
+        <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M7.6 6.5A8 8 0 1 1 4.2 13.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M2.6 7.2 8.4 3.1 7.8 10.2Z" /></symbol>
+        <symbol id="icon-music" viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h5V3h-7z" /></symbol>
+        <symbol id="icon-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.42-1.41L7.83 13H20v-2z" /></symbol>
+        <symbol id="icon-forward" viewBox="0 0 24 24"><path d="m12 4-1.42 1.41L16.17 11H4v2h12.17l-5.59 5.59L12 20l8-8-8-8z" /></symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m12 3-9 8h3v10h5v-6h2v6h5V11h3l-9-8z" /></symbol>
+        <symbol id="icon-leaderboard" viewBox="0 0 24 24"><path d="M7.5 21H2V9h5.5v12zm7.25 0h-5.5V3h5.5v18zM22 21h-5.5v-8H22v8z" /></symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8h16v8zM4 9V7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2H4z" /></symbol>
+        <symbol id="icon-person" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5.33 0-8 2.67-8 5v3h16v-3c0-2.33-2.67-5-8-5z" /></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></symbol>
+      </svg>
       <div class="sky-gradient" aria-hidden="true"></div>
       <div class="cloud cloud-a" aria-hidden="true"></div>
       <div class="cloud cloud-b" aria-hidden="true"></div>
@@ -39,7 +52,9 @@
               <path class="restart-arrowhead" d="M2.6 7.2 8.4 3.1 7.8 10.2Z" />
             </svg>
           </button>
-          <button id="menu-btn" class="chrome-btn hidden" type="button" aria-label="Open menu" title="Menu">☰</button>
+          <button id="menu-btn" class="chrome-btn hidden" type="button" aria-label="Open menu" title="Menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-menu" /></svg>
+          </button>
         </div>
       </section>
 
@@ -58,11 +73,7 @@
       </div>
 
       <button id="music-btn" class="music-toggle" type="button" aria-label="Mute music" title="Mute music">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 18V6l9-2v12" />
-          <circle cx="6.5" cy="18" r="2.5" />
-          <circle cx="15.5" cy="16" r="2.5" />
-        </svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-music" /></svg>
       </button>
       <audio
         id="bg-music"
@@ -76,87 +87,92 @@
       <section id="intro" class="overlay">
         <div class="dialog" data-panel-label="SKYBALL // SYSTEM 01">
           <div class="marble-icon" aria-hidden="true"></div>
-          <h1>SKY//BALL</h1>
-          <p>Twenty suspended stages. First collect the floating key cube to unlock the receiver, then reach the glowing destination before time expires.</p>
+          <div class="dialog-screen">
+            <h1>SKY//BALL</h1>
+            <p>TWENTY SUSPENDED STAGES. FIRST COLLECT THE FLOATING KEY CUBE TO UNLOCK THE RECEIVER, THEN REACH THE GLOWING DESTINATION BEFORE TIME EXPIRES.</p>
+          </div>
           <div class="menu-actions intro-actions">
-            <button id="start-btn" class="primary-btn" type="button">ENTER LEVEL 01</button>
-            <button id="leaderboards-btn" class="secondary-btn" type="button">LEADERBOARDS</button>
+            <button id="start-btn" class="primary-btn" type="button"><span>ENTER LEVEL 01</span><svg class="button-icon" aria-hidden="true"><use href="#icon-play" /></svg></button>
+            <button id="leaderboards-btn" class="secondary-btn" type="button"><span>LEADERBOARDS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-leaderboard" /></svg></button>
           </div>
         </div>
       </section>
 
       <section id="complete" class="overlay hidden">
         <div class="dialog" data-panel-label="STAGE STATUS // CLEAR">
-          <div class="result-icon" aria-hidden="true">✓</div>
-          <h2 id="complete-title">Level complete</h2>
-          <p id="complete-copy">Receiver locked. Ready for the next board.</p>
-          <button id="again-btn" class="primary-btn" type="button">NEXT LEVEL</button>
+          <div class="result-icon" aria-hidden="true"><svg><use href="#icon-check" /></svg></div>
+          <div class="dialog-screen">
+            <h2 id="complete-title">LEVEL COMPLETE</h2>
+            <p id="complete-copy">GATE TRAVERSED. READY FOR THE NEXT BOARD.</p>
+          </div>
+          <button id="again-btn" class="primary-btn" type="button"><span>NEXT LEVEL</span><svg class="button-icon" aria-hidden="true"><use href="#icon-forward" /></svg></button>
         </div>
       </section>
 
       <section id="failed" class="overlay hidden">
         <div class="dialog" data-panel-label="STAGE STATUS // RETRY">
-          <div id="failed-icon" class="result-icon fall-icon" aria-hidden="true">↓</div>
-          <h2 id="failed-title">Marble lost</h2>
-          <p id="failed-copy">The marble fell from the board.</p>
-          <button id="retry-btn" class="primary-btn" type="button">TRY AGAIN</button>
+          <div class="dialog-screen dialog-screen-compact">
+            <h2 id="failed-title">MARBLE LOST</h2>
+          </div>
+          <button id="retry-btn" class="primary-btn" type="button"><span>TRY AGAIN</span><svg class="button-icon" aria-hidden="true"><use href="#icon-restart" /></svg></button>
         </div>
       </section>
 
       <section id="menu-overlay" class="overlay hidden">
         <div class="dialog menu-dialog" data-panel-label="SKYBALL // QUICK MENU">
-          <div class="menu-glyph" aria-hidden="true">◇</div>
-          <h2>SYSTEM MENU</h2>
-          <p>Level controls</p>
+          <div class="dialog-screen">
+            <h2>SYSTEM MENU</h2>
+            <p>LEVEL CONTROLS</p>
+          </div>
           <div class="menu-actions">
-            <button id="resume-btn" class="primary-btn" type="button">RESUME</button>
-            <button id="menu-restart-btn" class="secondary-btn" type="button">RESTART LEVEL</button>
-            <button id="menu-leaderboards-btn" class="secondary-btn" type="button">LEADERBOARDS</button>
+            <button id="resume-btn" class="primary-btn" type="button"><span>RESUME</span><svg class="button-icon" aria-hidden="true"><use href="#icon-play" /></svg></button>
+            <button id="menu-restart-btn" class="secondary-btn" type="button"><span>RESTART LEVEL</span><svg class="button-icon" aria-hidden="true"><use href="#icon-restart" /></svg></button>
+            <button id="menu-leaderboards-btn" class="secondary-btn" type="button"><span>LEADERBOARDS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-leaderboard" /></svg></button>
+            <button id="menu-main-menu-btn" class="secondary-btn" type="button"><span>MAIN MENU</span><svg class="button-icon" aria-hidden="true"><use href="#icon-home" /></svg></button>
           </div>
         </div>
       </section>
 
       <section id="run-results" class="overlay hidden">
         <div class="dialog results-dialog" data-panel-label="RUN STATUS // COMPLETE">
-          <div class="result-icon" aria-hidden="true">✓</div>
-          <h2>RUN COMPLETE</h2>
+          <div class="result-icon" aria-hidden="true"><svg><use href="#icon-check" /></svg></div>
+          <div class="dialog-screen"><h2>RUN COMPLETE</h2></div>
           <div class="results-screen">
             <strong id="final-run-time" class="final-run-time">00:00.00</strong>
             <div id="achievement-list" class="achievement-list" aria-live="polite"></div>
             <p id="submission-status" class="submission-status">Saving result…</p>
           </div>
           <div class="menu-actions results-actions">
-            <button id="results-leaderboards-btn" class="primary-btn" type="button">VIEW LEADERBOARDS</button>
-            <button id="play-again-btn" class="secondary-btn" type="button">PLAY AGAIN</button>
-            <button id="main-menu-btn" class="secondary-btn" type="button">MAIN MENU</button>
+            <button id="results-leaderboards-btn" class="primary-btn" type="button"><span>VIEW LEADERBOARDS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-leaderboard" /></svg></button>
+            <button id="play-again-btn" class="secondary-btn" type="button"><span>PLAY AGAIN</span><svg class="button-icon" aria-hidden="true"><use href="#icon-play" /></svg></button>
+            <button id="main-menu-btn" class="secondary-btn" type="button"><span>MAIN MENU</span><svg class="button-icon" aria-hidden="true"><use href="#icon-home" /></svg></button>
           </div>
         </div>
       </section>
 
       <section id="name-entry" class="overlay hidden">
         <form id="name-form" class="dialog name-dialog" data-panel-label="PLAYER ID // REGISTRATION">
-          <div class="menu-glyph" aria-hidden="true">◇</div>
-          <h2>ENTER PLAYER NAME</h2>
+          <div class="dialog-screen"><h2>ENTER PLAYER NAME</h2></div>
           <div class="name-screen">
             <label for="player-name">3–12 LETTERS / NUMBERS</label>
             <input id="player-name" name="player-name" type="text" minlength="3" maxlength="12" autocomplete="nickname" spellcheck="false" />
             <span id="name-error" class="name-error" aria-live="polite"></span>
           </div>
-          <button class="primary-btn" type="submit">CONFIRM</button>
+          <button class="primary-btn" type="submit"><span>CONFIRM</span><svg class="button-icon" aria-hidden="true"><use href="#icon-check" /></svg></button>
           <button id="cancel-name-btn" class="text-btn" type="button">CANCEL</button>
         </form>
       </section>
 
       <section id="leaderboards" class="overlay hidden">
         <div class="dialog leaderboard-dialog" data-panel-label="SKYBALL // LEADERBOARDS">
-          <div class="leaderboard-header">
+          <div class="leaderboard-header dialog-screen">
             <h2>LEADERBOARDS</h2>
-            <button id="close-leaderboards-btn" class="compact-btn" type="button">BACK</button>
+            <button id="close-leaderboards-btn" class="compact-btn" type="button"><span>BACK</span><svg class="button-icon" aria-hidden="true"><use href="#icon-back" /></svg></button>
           </div>
           <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard period">
-            <button class="leaderboard-tab" data-tab="all-time" type="button" role="tab">ALL TIME</button>
-            <button class="leaderboard-tab is-active" data-tab="monthly" type="button" role="tab">MONTHLY</button>
-            <button class="leaderboard-tab" data-tab="personal" type="button" role="tab">PERSONAL BEST</button>
+            <button class="leaderboard-tab" data-tab="all-time" type="button" role="tab"><span>ALL TIME</span><svg class="button-icon" aria-hidden="true"><use href="#icon-leaderboard" /></svg></button>
+            <button class="leaderboard-tab is-active" data-tab="monthly" type="button" role="tab"><span>MONTHLY</span><svg class="button-icon" aria-hidden="true"><use href="#icon-calendar" /></svg></button>
+            <button class="leaderboard-tab" data-tab="personal" type="button" role="tab"><span>PERSONAL BEST</span><svg class="button-icon" aria-hidden="true"><use href="#icon-person" /></svg></button>
           </div>
           <div class="leaderboard-screen">
             <div class="leaderboard-meta">
@@ -167,9 +183,9 @@
             <div id="personal-best-panel" class="personal-best-panel hidden"></div>
           </div>
           <div id="leaderboard-pagination" class="leaderboard-pagination">
-            <button id="previous-page-btn" class="compact-btn" type="button">← PREVIOUS</button>
+            <button id="previous-page-btn" class="compact-btn" type="button"><span>PREVIOUS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-back" /></svg></button>
             <span id="leaderboard-page">1</span>
-            <button id="next-page-btn" class="compact-btn" type="button">NEXT →</button>
+            <button id="next-page-btn" class="compact-btn" type="button"><span>NEXT</span><svg class="button-icon" aria-hidden="true"><use href="#icon-forward" /></svg></button>
           </div>
         </div>
       </section>
