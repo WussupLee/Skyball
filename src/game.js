@@ -279,45 +279,61 @@ function createAquaticEnvironment() {
   seabed.renderOrder = -4;
   scene.add(seabed);
 
-  const bodyGeometry = new THREE.SphereGeometry(1, 16, 10);
-  const dorsalMarkGeometry = new THREE.BufferGeometry();
-  dorsalMarkGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute([
-      0.95, 0, 0, 0.35, 0, 0.07, -0.28, 0, 0.25,
-      0.95, 0, 0, -0.28, 0, 0.25, -0.88, 0, 0,
-      0.95, 0, 0, -0.88, 0, 0, -0.28, 0, -0.25,
-      0.95, 0, 0, -0.28, 0, -0.25, 0.35, 0, -0.07,
-    ], 3),
-  );
-  dorsalMarkGeometry.computeVertexNormals();
-  const tailGeometry = new THREE.BufferGeometry();
-  tailGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute([
-      0, 0, 0, -0.68, 0, 0.12, -1.08, 0, 0.82,
-      0, 0, 0, -1.08, 0, -0.82, -0.68, 0, -0.12,
-    ], 3),
-  );
-  tailGeometry.computeVertexNormals();
-  const pectoralGeometry = new THREE.BufferGeometry();
-  pectoralGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute([
-      0.18, 0, 0, -0.3, 0, 0.08, -0.88, 0, 0.64,
-      0.18, 0, 0, -0.88, 0, 0.64, -0.45, 0, 0.02,
-    ], 3),
-  );
-  pectoralGeometry.computeVertexNormals();
-  const dorsalGeometry = new THREE.BufferGeometry();
-  dorsalGeometry.setAttribute(
-    "position",
-    new THREE.Float32BufferAttribute([
-      0.66, 0, 0, 0.2, 0.17, 0, -0.3, 0.84, 0,
-      0.66, 0, 0, -0.3, 0.84, 0, -0.82, 0, 0,
-    ], 3),
-  );
-  dorsalGeometry.computeVertexNormals();
+  const bodyGeometry = new THREE.SphereGeometry(1, 20, 12);
+  const bodyPositions = bodyGeometry.attributes.position;
+  for (let vertexIndex = 0; vertexIndex < bodyPositions.count; vertexIndex += 1) {
+    const x = bodyPositions.getX(vertexIndex);
+    const rearTaper = x < -0.08 ? THREE.MathUtils.lerp(1, 0.7, (-x - 0.08) / 0.92) : 1;
+    bodyPositions.setY(vertexIndex, bodyPositions.getY(vertexIndex) * rearTaper);
+    bodyPositions.setZ(vertexIndex, bodyPositions.getZ(vertexIndex) * rearTaper);
+  }
+  bodyGeometry.computeVertexNormals();
+
+  const makeHorizontalFin = (shape) => {
+    const geometry = new THREE.ShapeGeometry(shape, 5);
+    geometry.rotateX(Math.PI / 2);
+    return geometry;
+  };
+
+  const tailShape = new THREE.Shape();
+  tailShape.moveTo(0.12, 0.16);
+  tailShape.quadraticCurveTo(-0.22, 0.17, -0.48, 0.42);
+  tailShape.quadraticCurveTo(-0.74, 0.68, -1.08, 0.72);
+  tailShape.quadraticCurveTo(-0.9, 0.34, -0.94, 0.08);
+  tailShape.quadraticCurveTo(-0.7, 0.02, -0.5, 0);
+  tailShape.quadraticCurveTo(-0.7, -0.02, -0.94, -0.08);
+  tailShape.quadraticCurveTo(-0.9, -0.34, -1.08, -0.72);
+  tailShape.quadraticCurveTo(-0.74, -0.68, -0.48, -0.42);
+  tailShape.quadraticCurveTo(-0.22, -0.17, 0.12, -0.16);
+  tailShape.closePath();
+  const tailGeometry = makeHorizontalFin(tailShape);
+
+  const pectoralShape = new THREE.Shape();
+  pectoralShape.moveTo(0.18, 0);
+  pectoralShape.quadraticCurveTo(-0.08, 0.08, -0.38, 0.37);
+  pectoralShape.quadraticCurveTo(-0.66, 0.64, -0.9, 0.6);
+  pectoralShape.quadraticCurveTo(-0.7, 0.25, -0.42, 0.08);
+  pectoralShape.quadraticCurveTo(-0.12, -0.02, 0.18, 0);
+  pectoralShape.closePath();
+  const pectoralGeometry = makeHorizontalFin(pectoralShape);
+
+  const dorsalMarkShape = new THREE.Shape();
+  dorsalMarkShape.moveTo(0.7, 0);
+  dorsalMarkShape.quadraticCurveTo(0.25, 0.07, -0.12, 0.22);
+  dorsalMarkShape.quadraticCurveTo(-0.55, 0.3, -0.92, 0.04);
+  dorsalMarkShape.quadraticCurveTo(-1, 0, -0.92, -0.04);
+  dorsalMarkShape.quadraticCurveTo(-0.55, -0.3, -0.12, -0.22);
+  dorsalMarkShape.quadraticCurveTo(0.25, -0.07, 0.7, 0);
+  dorsalMarkShape.closePath();
+  const dorsalMarkGeometry = makeHorizontalFin(dorsalMarkShape);
+
+  const dorsalShape = new THREE.Shape();
+  dorsalShape.moveTo(0.58, 0);
+  dorsalShape.quadraticCurveTo(0.22, 0.08, -0.12, 0.34);
+  dorsalShape.quadraticCurveTo(-0.5, 0.58, -0.78, 0.3);
+  dorsalShape.quadraticCurveTo(-0.9, 0.16, -0.98, 0);
+  dorsalShape.closePath();
+  const dorsalGeometry = new THREE.ShapeGeometry(dorsalShape, 5);
   const gillGeometry = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(0.54, 0, -0.42),
     new THREE.Vector3(0.66, 0, -0.2),
@@ -341,7 +357,7 @@ function createAquaticEnvironment() {
       toneMapped: false,
     });
     const body = new THREE.Mesh(bodyGeometry, material);
-    body.scale.set(size * 1.55, size * 0.58, size * 0.78);
+    body.scale.set(size * 1.68, size * 0.6, size * 0.7);
     group.add(body);
 
     const tail = new THREE.Mesh(
@@ -355,16 +371,16 @@ function createAquaticEnvironment() {
         toneMapped: false,
       }),
     );
-    tail.position.x = -size * 1.3;
-    tail.scale.setScalar(size * 0.95);
+    tail.position.x = -size * 1.46;
+    tail.scale.set(size * 1.05, size * 1.05, size * 0.88);
     group.add(tail);
 
     const backMark = new THREE.Mesh(
       dorsalMarkGeometry,
       new THREE.MeshBasicMaterial({ color: accentColor, side: THREE.DoubleSide, fog: false, toneMapped: false }),
     );
-    backMark.position.set(-size * 0.03, size * 0.535, 0);
-    backMark.scale.set(size * 0.94, size * 0.94, size * 0.94);
+    backMark.position.set(-size * 0.02, size * 0.57, 0);
+    backMark.scale.set(size * 0.98, size * 0.98, size * 0.98);
     group.add(backMark);
 
     const finMaterial = new THREE.MeshBasicMaterial({
@@ -377,15 +393,15 @@ function createAquaticEnvironment() {
     });
     const pectoralFins = [-1, 1].map((side) => {
       const fin = new THREE.Mesh(pectoralGeometry, finMaterial.clone());
-      fin.position.set(size * 0.28, -size * 0.02, side * size * 0.47);
-      fin.scale.set(size * 0.56, size * 0.56, side * size * 0.56);
+      fin.position.set(size * 0.4, -size * 0.01, side * size * 0.4);
+      fin.scale.set(size * 0.6, size * 0.6, side * size * 0.54);
       group.add(fin);
       return fin;
     });
 
     const dorsalFin = new THREE.Mesh(dorsalGeometry, finMaterial.clone());
-    dorsalFin.position.set(-size * 0.12, size * 0.42, 0);
-    dorsalFin.scale.setScalar(size * 0.62);
+    dorsalFin.position.set(-size * 0.08, size * 0.43, 0);
+    dorsalFin.scale.set(size * 0.74, size * 0.48, size * 0.74);
     group.add(dorsalFin);
 
     const gill = new THREE.Line(
