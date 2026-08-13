@@ -1301,6 +1301,10 @@ button:focus-visible,
   text-transform: none;
 }
 
+#intro .dialog-screen p {
+  text-transform: none;
+}
+
 .dialog-screen-compact h2 {
   min-height: 92px;
   padding: 20px;
