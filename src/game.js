@@ -255,7 +255,7 @@ function createAquaticEnvironment() {
           vec3 shallow = vec3(0.02, 0.68, 0.82);
           vec3 color = mix(deep, shallow, 0.36 + swell * 0.22);
           color += vec3(0.48, 0.94, 1.0) * caustic * 0.88;
-          gl_FragColor = vec4(color, 0.69);
+          gl_FragColor = vec4(color, 0.62);
         }
       `,
       transparent: true,
@@ -279,6 +279,8 @@ function createAquaticEnvironment() {
   scene.add(seabed);
 
   const bodyGeometry = new THREE.SphereGeometry(1, 16, 10);
+  const eyeGeometry = new THREE.SphereGeometry(1, 10, 7);
+  const accentGeometry = new THREE.BoxGeometry(1, 1, 1);
   const tailGeometry = new THREE.BufferGeometry();
   tailGeometry.setAttribute(
     "position",
@@ -290,12 +292,13 @@ function createAquaticEnvironment() {
 
   for (let index = 0; index < 30; index += 1) {
     const group = new THREE.Group();
-    const size = THREE.MathUtils.lerp(0.16, 0.34, random());
+    const size = THREE.MathUtils.lerp(0.14, 0.29, random());
     const color = colors[index % colors.length];
+    const accentColor = new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.52);
     const material = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
-      opacity: THREE.MathUtils.lerp(0.62, 0.9, random()),
+      opacity: THREE.MathUtils.lerp(0.88, 0.98, random()),
       fog: false,
       toneMapped: false,
     });
@@ -306,9 +309,9 @@ function createAquaticEnvironment() {
     const tail = new THREE.Mesh(
       tailGeometry,
       new THREE.MeshBasicMaterial({
-        color,
+        color: accentColor,
         transparent: true,
-        opacity: material.opacity * 0.9,
+        opacity: 0.98,
         side: THREE.DoubleSide,
         fog: false,
         toneMapped: false,
@@ -318,11 +321,55 @@ function createAquaticEnvironment() {
     tail.scale.setScalar(size * 0.95);
     group.add(tail);
 
+    const stripe = new THREE.Mesh(
+      accentGeometry,
+      new THREE.MeshBasicMaterial({ color: accentColor, fog: false, toneMapped: false }),
+    );
+    stripe.position.set(size * 0.08, size * 0.56, 0);
+    stripe.scale.set(size * 1.5, size * 0.08, size * 0.22);
+    group.add(stripe);
+
+    const finMaterial = new THREE.MeshBasicMaterial({
+      color: accentColor,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+      fog: false,
+      toneMapped: false,
+    });
+    const sideFin = new THREE.Mesh(tailGeometry, finMaterial);
+    sideFin.position.set(-size * 0.05, -size * 0.05, size * 0.47);
+    sideFin.rotation.y = Math.PI * 0.54;
+    sideFin.scale.setScalar(size * 0.42);
+    group.add(sideFin);
+
+    const dorsalFin = new THREE.Mesh(tailGeometry, finMaterial.clone());
+    dorsalFin.position.set(-size * 0.12, size * 0.5, 0);
+    dorsalFin.rotation.x = Math.PI / 2;
+    dorsalFin.rotation.y = Math.PI * 0.58;
+    dorsalFin.scale.setScalar(size * 0.36);
+    group.add(dorsalFin);
+
+    const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x08284d, fog: false, toneMapped: false });
+    const eyeHighlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, toneMapped: false });
+    [-1, 1].forEach((side) => {
+      const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      eye.position.set(size * 1.18, size * 0.2, side * size * 0.55);
+      eye.scale.setScalar(size * 0.14);
+      group.add(eye);
+
+      const highlight = new THREE.Mesh(eyeGeometry, eyeHighlightMaterial);
+      highlight.position.set(size * 1.27, size * 0.25, side * size * 0.6);
+      highlight.scale.setScalar(size * 0.052);
+      group.add(highlight);
+    });
+
     group.renderOrder = -3;
     scene.add(group);
     fishSchool.push({
       group,
       tail,
+      sideFin,
       radius: THREE.MathUtils.lerp(3.1, 11.8, random()),
       angle: random() * Math.PI * 2,
       speed: THREE.MathUtils.lerp(0.055, 0.16, random()) * (random() > 0.5 ? 1 : -1),
@@ -346,6 +393,7 @@ function updateAquaticEnvironment(time) {
     fish.group.position.set(x, fish.depth + Math.sin(time * 0.7 + fish.phase) * 0.11, z);
     fish.group.rotation.y = -Math.atan2(dz, dx);
     fish.tail.rotation.y = Math.sin(time * 6.4 + fish.phase) * 0.42;
+    fish.sideFin.rotation.x = Math.sin(time * 4.8 + fish.phase) * 0.22;
   });
 }
 
