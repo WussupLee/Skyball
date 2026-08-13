@@ -1286,7 +1286,7 @@ button:focus-visible,
   display: flex;
   min-height: 62px;
   align-items: center;
-  padding: 13px 82px 6px 20px;
+  padding: 13px 20px 6px;
   text-transform: uppercase;
 }
 
@@ -1307,7 +1307,7 @@ button:focus-visible,
 
 .menu-dialog .dialog-screen p {
   min-height: 62px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .results-dialog > .dialog-screen,
@@ -1317,7 +1317,7 @@ button:focus-visible,
 
 .results-dialog > .dialog-screen h2,
 .name-dialog > .dialog-screen h2 {
-  padding-right: 82px;
+  padding-right: 20px;
 }
 
 .results-screen,
@@ -1619,7 +1619,7 @@ button:focus-visible,
   .dialog-screen h1,
   .dialog-screen h2 {
     min-height: 57px;
-    padding: 12px 62px 6px 15px;
+    padding: 12px 15px 6px;
   }
 
   .dialog-screen p {

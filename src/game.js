@@ -1404,8 +1404,8 @@ function renderRunResults(result) {
   resultsDialog.classList.toggle("is-achievement", Boolean(elevated));
   if (elevated) playAchievementSound();
   submissionStatus.textContent = result.submitted
-    ? "VALIDATED RUN SAVED TO THE SKYBALL NETWORK"
-    : "LOCAL RESULT SAVED · GLOBAL SERVICE UNAVAILABLE";
+    ? "Validated run saved to the Skyball network"
+    : "Local result saved · global service unavailable";
 }
 
 async function finishRunSubmission() {
@@ -1860,7 +1860,7 @@ function updateGoal(delta) {
       return;
     } else {
       completeTitle.textContent = "LEVEL COMPLETE";
-      completeCopy.textContent = "GATE TRAVERSED. READY FOR THE NEXT BOARD.";
+      completeCopy.textContent = "Gate traversed. Ready for the next board.";
       againButton.textContent = "NEXT LEVEL";
     }
     complete.classList.remove("hidden");
