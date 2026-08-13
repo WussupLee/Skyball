@@ -93,6 +93,9 @@ const undersideLight = new THREE.PointLight(0x8fe9ff, 18, 18, 2);
 undersideLight.position.set(0, -4, 0);
 scene.add(undersideLight);
 
+const waterUniforms = { uTime: { value: 0 } };
+const fishSchool = [];
+
 const rig = new THREE.Group();
 scene.add(rig);
 
@@ -212,6 +215,141 @@ function mulberry32(seed) {
     return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+function createAquaticEnvironment() {
+  const water = new THREE.Mesh(
+    new THREE.PlaneGeometry(70, 70, 96, 96),
+    new THREE.ShaderMaterial({
+      uniforms: waterUniforms,
+      vertexShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          vec3 transformed = position;
+          transformed.z += sin(position.x * 0.42 + uTime * 0.55) * 0.055;
+          transformed.z += sin(position.y * 0.51 - uTime * 0.42) * 0.045;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+
+        float causticLayer(vec2 point, float time) {
+          vec2 warped = point;
+          warped.x += sin(point.y * 0.73 + time * 0.62) * 1.3;
+          warped.y += sin(point.x * 0.81 - time * 0.48) * 1.15;
+          float a = abs(sin(warped.x + sin(warped.y * 0.66 + time)));
+          float b = abs(sin(warped.y * 1.08 + sin(warped.x * 0.58 - time * 0.8)));
+          return pow(clamp(1.0 - abs(a - b), 0.0, 1.0), 11.0);
+        }
+
+        void main() {
+          vec2 point = (vUv - 0.5) * 31.0;
+          float broad = causticLayer(point, uTime * 0.36);
+          float fine = causticLayer(point * 1.63 + vec2(4.2, -2.7), -uTime * 0.27);
+          float caustic = clamp(broad * 0.72 + fine * 0.46, 0.0, 1.0);
+          float swell = sin(point.x * 0.16 + point.y * 0.11 + uTime * 0.24) * 0.5 + 0.5;
+          vec3 deep = vec3(0.015, 0.30, 0.58);
+          vec3 shallow = vec3(0.02, 0.68, 0.82);
+          vec3 color = mix(deep, shallow, 0.36 + swell * 0.22);
+          color += vec3(0.48, 0.94, 1.0) * caustic * 0.88;
+          gl_FragColor = vec4(color, 0.69);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    }),
+  );
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -2.05;
+  water.renderOrder = -2;
+  scene.add(water);
+
+  const seabed = new THREE.Mesh(
+    new THREE.PlaneGeometry(70, 70),
+    new THREE.MeshBasicMaterial({ color: 0x087da8, transparent: true, opacity: 0.58, toneMapped: false }),
+  );
+  seabed.rotation.x = -Math.PI / 2;
+  seabed.position.y = -3.45;
+  seabed.renderOrder = -4;
+  scene.add(seabed);
+
+  const bodyGeometry = new THREE.SphereGeometry(1, 16, 10);
+  const tailGeometry = new THREE.BufferGeometry();
+  tailGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute([0, 0, 0, -1, 0, 0.72, -1, 0, -0.72], 3),
+  );
+  tailGeometry.computeVertexNormals();
+  const colors = [0x2af2ff, 0xff718f, 0xffdd3f, 0x55f58a, 0x9c83ff, 0xff9d45, 0x5cbcff];
+  const random = mulberry32(0xa9f120);
+
+  for (let index = 0; index < 30; index += 1) {
+    const group = new THREE.Group();
+    const size = THREE.MathUtils.lerp(0.16, 0.34, random());
+    const color = colors[index % colors.length];
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: THREE.MathUtils.lerp(0.62, 0.9, random()),
+      fog: false,
+      toneMapped: false,
+    });
+    const body = new THREE.Mesh(bodyGeometry, material);
+    body.scale.set(size * 1.55, size * 0.58, size * 0.78);
+    group.add(body);
+
+    const tail = new THREE.Mesh(
+      tailGeometry,
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: material.opacity * 0.9,
+        side: THREE.DoubleSide,
+        fog: false,
+        toneMapped: false,
+      }),
+    );
+    tail.position.x = -size * 1.3;
+    tail.scale.setScalar(size * 0.95);
+    group.add(tail);
+
+    group.renderOrder = -3;
+    scene.add(group);
+    fishSchool.push({
+      group,
+      tail,
+      radius: THREE.MathUtils.lerp(3.1, 11.8, random()),
+      angle: random() * Math.PI * 2,
+      speed: THREE.MathUtils.lerp(0.055, 0.16, random()) * (random() > 0.5 ? 1 : -1),
+      phase: random() * Math.PI * 2,
+      depth: THREE.MathUtils.lerp(-2.38, -3.05, random()),
+      drift: THREE.MathUtils.lerp(0.2, 0.85, random()),
+    });
+  }
+}
+
+function updateAquaticEnvironment(time) {
+  waterUniforms.uTime.value = time;
+  fishSchool.forEach((fish) => {
+    const angle = fish.angle + time * fish.speed;
+    const radius = fish.radius + Math.sin(time * 0.22 + fish.phase) * fish.drift;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius * 0.78;
+    const direction = fish.speed > 0 ? 1 : -1;
+    const dx = -Math.sin(angle) * direction;
+    const dz = Math.cos(angle) * 0.78 * direction;
+    fish.group.position.set(x, fish.depth + Math.sin(time * 0.7 + fish.phase) * 0.11, z);
+    fish.group.rotation.y = -Math.atan2(dz, dx);
+    fish.tail.rotation.y = Math.sin(time * 6.4 + fish.phase) * 0.42;
+  });
+}
+
+createAquaticEnvironment();
 
 function randomBetween(random, min, max) {
   return min + (max - min) * random();
@@ -1865,6 +2003,7 @@ function animate(now) {
   requestAnimationFrame(animate);
   const delta = Math.min((now - animate.lastTime) / 1000 || 0, 0.04);
   animate.lastTime = now;
+  updateAquaticEnvironment(now / 1000);
 
   if (!paused) {
     if (state === "playing") {
