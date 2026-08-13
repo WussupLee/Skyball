@@ -51,9 +51,10 @@ const MARBLE_RADIUS = 0.31;
 const MAX_TILT = THREE.MathUtils.degToRad(10.5);
 const SURFACE_Y = BOARD_THICKNESS;
 const UNLOCK_ANIMATION_SPEED = 1.25;
+const BASE_FOG_DENSITY = 0.044;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x4b8fd0, 0.044);
+scene.fog = new THREE.FogExp2(0x4b8fd0, BASE_FOG_DENSITY);
 
 const camera = new THREE.PerspectiveCamera(39, 1, 0.1, 110);
 camera.position.set(0, 12.2, 9.2);
@@ -280,8 +281,13 @@ function updateCameraFraming() {
   // narrows, which crops the disc on phones. Pull back only in portrait layouts
   // so the entire playable rim remains visible without changing desktop scale.
   const portraitScale = THREE.MathUtils.clamp(1.02 / aspect, 1, 1.95);
-  camera.position.set(0, 12.2 * levelScale * portraitScale, 9.2 * levelScale * portraitScale);
+  const framingScale = levelScale * portraitScale;
+  camera.position.set(0, 12.2 * framingScale, 9.2 * framingScale);
   camera.lookAt(0, 0, 0);
+  // Exponential fog is based on camera-to-object distance. Without this
+  // compensation, portrait framing and larger late-game boards wash the white
+  // and cyan materials toward gray simply because the camera is farther away.
+  scene.fog.density = BASE_FOG_DENSITY / framingScale;
 }
 
 function randomPointOnBoard(random, edgeBias = 0.7) {
