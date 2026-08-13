@@ -288,6 +288,11 @@ button:focus-visible,
   stroke: none;
 }
 
+.chrome-btn > .restart-icon .restart-arc {
+  fill: none;
+  stroke: currentcolor;
+}
+
 .timer-stack {
   position: absolute;
   z-index: 4;
