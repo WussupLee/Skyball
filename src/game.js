@@ -1367,17 +1367,73 @@ function updateFall(delta) {
     marbleVelocity.multiplyScalar(Math.exp(-(0.48 + overhang * 0.75) * delta));
     marblePosition.addScaledVector(marbleVelocity, delta);
     bounceVelocity -= THREE.MathUtils.lerp(2.4, 13.8, Math.max(overhang, release)) * delta;
+
+    let nextHeight = marble.position.y + bounceVelocity * delta;
+    const radialOffset = marblePosition.clone().sub(fallTarget);
+    let radialDistance = Math.max(radialOffset.length(), 0.0001);
+    const radialDirection = radialOffset.multiplyScalar(1 / radialDistance);
+    const tangentDirection = new THREE.Vector2(-radialDirection.y, radialDirection.x);
+    let radialSpeed = marbleVelocity.dot(radialDirection);
+    let tangentSpeed = marbleVelocity.dot(tangentDirection);
+    const top = SURFACE_Y;
+    const bottom = SURFACE_Y - BOARD_THICKNESS;
+
+    const applyContactVelocity = (normalRadial, normalVertical, restitution = 0.16) => {
+      const normalSpeed = radialSpeed * normalRadial + bounceVelocity * normalVertical;
+      if (normalSpeed < 0) {
+        radialSpeed -= normalSpeed * (1 + restitution) * normalRadial;
+        bounceVelocity -= normalSpeed * (1 + restitution) * normalVertical;
+      }
+      tangentSpeed *= 0.94;
+    };
+
+    // Resolve the sphere against the rounded upper and lower edges of the
+    // cutout. The contact normal redirects an off-center fall along the lip,
+    // instead of allowing the sphere mesh to pass through the cylinder wall.
+    const resolveCorner = (cornerHeight) => {
+      const horizontal = radialDistance - fallHazard.r;
+      const vertical = nextHeight - cornerHeight;
+      const cornerDistance = Math.hypot(horizontal, vertical);
+      if (cornerDistance >= MARBLE_RADIUS || cornerDistance < 0.0001) return;
+      const normalRadial = horizontal / cornerDistance;
+      const normalVertical = vertical / cornerDistance;
+      const correction = MARBLE_RADIUS - cornerDistance;
+      radialDistance += normalRadial * correction;
+      nextHeight += normalVertical * correction;
+      applyContactVelocity(normalRadial, normalVertical, 0.18);
+    };
+
+    if (nextHeight > top && nextHeight < top + MARBLE_RADIUS) {
+      resolveCorner(top);
+    } else if (nextHeight >= bottom && nextHeight <= top) {
+      const wallLimit = Math.max(fallHazard.r - MARBLE_RADIUS, 0.02);
+      if (radialDistance > wallLimit) {
+        radialDistance = wallLimit;
+        if (radialSpeed > 0) radialSpeed *= -0.2;
+        tangentSpeed *= 0.92;
+        bounceVelocity *= 0.96;
+      }
+    } else if (nextHeight < bottom && nextHeight > bottom - MARBLE_RADIUS) {
+      resolveCorner(bottom);
+    }
+
+    marblePosition.copy(fallTarget).addScaledVector(radialDirection, radialDistance);
+    marbleVelocity.set(
+      radialDirection.x * radialSpeed + tangentDirection.x * tangentSpeed,
+      radialDirection.y * radialSpeed + tangentDirection.y * tangentSpeed,
+    );
+    marble.position.y = nextHeight;
   } else {
     bounceVelocity -= 11.8 * delta;
     marblePosition.addScaledVector(marbleVelocity, delta * 0.92);
+    marble.position.y += bounceVelocity * delta;
   }
   marble.position.x = marblePosition.x;
   marble.position.z = marblePosition.y;
-  marble.position.y += bounceVelocity * delta;
   marble.rotation.x += marbleVelocity.y * delta * 2.4;
   marble.rotation.z -= marbleVelocity.x * delta * 2.4;
 
-  if (marble.position.y < -4.5 || stateElapsed > 1.7) {
+  if (marble.position.y < -4.5 || stateElapsed > 2.1) {
     state = "overlay";
     failedIcon.textContent = "↓";
     failedTitle.textContent = "Marble lost";
