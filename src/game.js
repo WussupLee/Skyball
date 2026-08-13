@@ -543,7 +543,7 @@ function setLevelParameters() {
   } else {
     holeCount = Math.round(THREE.MathUtils.lerp(10, 44, difficultyCurve));
     holeRadius = THREE.MathUtils.lerp(0.66, 1.02, Math.pow(difficulty, 1.08));
-    roundDuration = THREE.MathUtils.lerp(19, 14, Math.pow(difficulty, 1.05));
+    roundDuration = ROUND_SECONDS;
     currentMaxTilt = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(11.5, 14, difficulty));
     currentAcceleration = THREE.MathUtils.lerp(9.5, 11, difficulty);
     currentDamping = THREE.MathUtils.lerp(0.54, 0.4, difficulty);
