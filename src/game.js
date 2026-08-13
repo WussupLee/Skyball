@@ -232,6 +232,8 @@ let unlockLight;
 let unlockEffect;
 let unlockEnergy;
 let marble;
+let marbleGlow;
+let marbleGoalLight;
 let shatterGroup;
 let goalUnlocked = false;
 let fallTarget;
@@ -1101,6 +1103,21 @@ function createMarble() {
       emissiveIntensity: 0.18,
     }),
   );
+  marbleGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(MARBLE_RADIUS * 1.18, 32, 20),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  marbleGlow.visible = false;
+  sphere.add(marbleGlow);
+
+  marbleGoalLight = new THREE.PointLight(0xffffff, 0, 5.5, 2);
+  sphere.add(marbleGoalLight);
   sphere.castShadow = true;
   sphere.receiveShadow = true;
   return sphere;
@@ -1848,9 +1865,15 @@ function updateGoal(delta) {
     1,
   );
   marble.material.emissive.setRGB(transform, transform, transform);
-  marble.material.emissiveIntensity = THREE.MathUtils.lerp(0.18, 4.2, transform);
+  marble.material.emissiveIntensity = THREE.MathUtils.lerp(0.18, 7.2, transform);
   marble.material.metalness = THREE.MathUtils.lerp(0.86, 0.18, transform);
   marble.material.roughness = THREE.MathUtils.lerp(0.1, 0.035, transform);
+  if (marbleGlow) {
+    marbleGlow.visible = transform > 0.01;
+    marbleGlow.material.opacity = THREE.MathUtils.lerp(0, 0.32, transform);
+    marbleGlow.scale.setScalar(1 + Math.sin(stateElapsed * 5.2) * 0.025 * transform);
+  }
+  if (marbleGoalLight) marbleGoalLight.intensity = THREE.MathUtils.lerp(0, 18, transform);
   if (goalLight) goalLight.intensity = THREE.MathUtils.lerp(27, 42, transform);
 
   if (stateElapsed > 1.52) {
