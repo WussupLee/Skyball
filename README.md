@@ -44,6 +44,19 @@ The deployable website is written to `dist/`. Local builds use relative asset pa
 
 Every push to `main` runs `.github/workflows/deploy-pages.yml`. The workflow installs dependencies, builds the Vite project, uploads `dist/`, and deploys it through GitHub Pages.
 
+## Global leaderboard setup
+
+Skyball works normally without a backend and continues to save personal bests in the browser. To enable the global All Time and Monthly leaderboards:
+
+1. Create a Supabase project.
+2. Open its **SQL Editor**, paste `supabase/schema.sql`, and run it once.
+3. In the GitHub Skyball repository, open **Settings → Secrets and variables → Actions**.
+4. Add `VITE_SUPABASE_URL` with the Supabase project URL.
+5. Add `VITE_SUPABASE_ANON_KEY` with the Supabase publishable/anon key.
+6. Re-run the **Deploy Skyball to GitHub Pages** workflow.
+
+For local development, copy `.env.example` to `.env.local` and enter the same values. The browser stores a random anonymous player ID and the chosen display name—no email, password, account, or fingerprint is used. Editing a name updates the current display name across leaderboard views; historical timing and split records remain attached to the same anonymous identity.
+
 ## Project structure
 
 ```text

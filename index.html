@@ -43,7 +43,13 @@
         </div>
       </section>
 
-      <div id="countdown" class="countdown" aria-live="off">30.0</div>
+      <div class="timer-stack" aria-label="Stage and run timers">
+        <div id="countdown" class="countdown" aria-live="off">20.0</div>
+        <div id="run-timer" class="run-timer hidden">
+          <span>RUN TIMER</span>
+          <strong>00:00.00</strong>
+        </div>
+      </div>
 
       <div id="objective-guide" class="objective-guide hidden" aria-live="polite">
         <span id="key-step" class="objective-step is-active">01 FIND KEY CUBE</span>
@@ -72,7 +78,10 @@
           <div class="marble-icon" aria-hidden="true"></div>
           <h1>SKY//BALL</h1>
           <p>Twenty suspended stages. First collect the floating key cube to unlock the receiver, then reach the glowing destination before time expires.</p>
-          <button id="start-btn" class="primary-btn" type="button">ENTER LEVEL 01</button>
+          <div class="menu-actions intro-actions">
+            <button id="start-btn" class="primary-btn" type="button">ENTER LEVEL 01</button>
+            <button id="leaderboards-btn" class="secondary-btn" type="button">LEADERBOARDS</button>
+          </div>
         </div>
       </section>
 
@@ -102,6 +111,65 @@
           <div class="menu-actions">
             <button id="resume-btn" class="primary-btn" type="button">RESUME</button>
             <button id="menu-restart-btn" class="secondary-btn" type="button">RESTART LEVEL</button>
+            <button id="menu-leaderboards-btn" class="secondary-btn" type="button">LEADERBOARDS</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="run-results" class="overlay hidden">
+        <div class="dialog results-dialog" data-panel-label="RUN STATUS // COMPLETE">
+          <div class="result-icon" aria-hidden="true">✓</div>
+          <h2>RUN COMPLETE</h2>
+          <div class="results-screen">
+            <strong id="final-run-time" class="final-run-time">00:00.00</strong>
+            <div id="achievement-list" class="achievement-list" aria-live="polite"></div>
+            <p id="submission-status" class="submission-status">Saving result…</p>
+          </div>
+          <div class="menu-actions results-actions">
+            <button id="results-leaderboards-btn" class="primary-btn" type="button">VIEW LEADERBOARDS</button>
+            <button id="play-again-btn" class="secondary-btn" type="button">PLAY AGAIN</button>
+            <button id="main-menu-btn" class="secondary-btn" type="button">MAIN MENU</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="name-entry" class="overlay hidden">
+        <form id="name-form" class="dialog name-dialog" data-panel-label="PLAYER ID // REGISTRATION">
+          <div class="menu-glyph" aria-hidden="true">◇</div>
+          <h2>ENTER PLAYER NAME</h2>
+          <div class="name-screen">
+            <label for="player-name">3–12 LETTERS / NUMBERS</label>
+            <input id="player-name" name="player-name" type="text" minlength="3" maxlength="12" autocomplete="nickname" spellcheck="false" />
+            <span id="name-error" class="name-error" aria-live="polite"></span>
+          </div>
+          <button class="primary-btn" type="submit">CONFIRM</button>
+          <button id="cancel-name-btn" class="text-btn" type="button">CANCEL</button>
+        </form>
+      </section>
+
+      <section id="leaderboards" class="overlay hidden">
+        <div class="dialog leaderboard-dialog" data-panel-label="SKYBALL // LEADERBOARDS">
+          <div class="leaderboard-header">
+            <h2>LEADERBOARDS</h2>
+            <button id="close-leaderboards-btn" class="compact-btn" type="button">BACK</button>
+          </div>
+          <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard period">
+            <button class="leaderboard-tab" data-tab="all-time" type="button" role="tab">ALL TIME</button>
+            <button class="leaderboard-tab is-active" data-tab="monthly" type="button" role="tab">MONTHLY</button>
+            <button class="leaderboard-tab" data-tab="personal" type="button" role="tab">PERSONAL BEST</button>
+          </div>
+          <div class="leaderboard-screen">
+            <div class="leaderboard-meta">
+              <span id="leaderboard-period"></span>
+              <button id="edit-name-btn" class="text-btn" type="button">EDIT NAME</button>
+            </div>
+            <div id="leaderboard-list" class="leaderboard-list" aria-live="polite"></div>
+            <div id="personal-best-panel" class="personal-best-panel hidden"></div>
+          </div>
+          <div id="leaderboard-pagination" class="leaderboard-pagination">
+            <button id="previous-page-btn" class="compact-btn" type="button">← PREVIOUS</button>
+            <span id="leaderboard-page">1</span>
+            <button id="next-page-btn" class="compact-btn" type="button">NEXT →</button>
           </div>
         </div>
       </section>

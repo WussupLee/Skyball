@@ -7,6 +7,21 @@ import "@fontsource/orbitron/900.css";
 import * as THREE from "three";
 import soundtrackUrl from "../assets/audio/Chrome Drift.mp3?url";
 import marbleRollingUrl from "../assets/audio/Big Marble Rolling Continuous Sound Effect.mp3?url";
+import {
+  currentMonthLabel,
+  fetchLeaderboard,
+  fetchPersonalBest,
+  formatRunTime,
+  leaderboardConfigured,
+  loadLocalPlayer,
+  sanitizePlayerName,
+  saveLocalPlayer,
+  submitRun,
+  updateLocalBest,
+  updateRemoteName,
+  validatePlayerName,
+} from "./leaderboard.js";
+import { RunTracker } from "./run-tracker.js";
 
 const root = document.querySelector("#skyball-game");
 const canvas = root.querySelector("#game-canvas");
@@ -37,6 +52,34 @@ const countdown = root.querySelector("#countdown");
 const musicButton = root.querySelector("#music-btn");
 const backgroundMusic = root.querySelector("#bg-music");
 const loading = root.querySelector("#loading");
+const runTimer = root.querySelector("#run-timer");
+const runTimerValue = runTimer.querySelector("strong");
+const leaderboardButton = root.querySelector("#leaderboards-btn");
+const menuLeaderboardButton = root.querySelector("#menu-leaderboards-btn");
+const leaderboardsOverlay = root.querySelector("#leaderboards");
+const closeLeaderboardsButton = root.querySelector("#close-leaderboards-btn");
+const leaderboardTabs = [...root.querySelectorAll(".leaderboard-tab")];
+const leaderboardList = root.querySelector("#leaderboard-list");
+const personalBestPanel = root.querySelector("#personal-best-panel");
+const leaderboardPeriod = root.querySelector("#leaderboard-period");
+const leaderboardPagination = root.querySelector("#leaderboard-pagination");
+const leaderboardPage = root.querySelector("#leaderboard-page");
+const previousPageButton = root.querySelector("#previous-page-btn");
+const nextPageButton = root.querySelector("#next-page-btn");
+const editNameButton = root.querySelector("#edit-name-btn");
+const nameEntry = root.querySelector("#name-entry");
+const nameForm = root.querySelector("#name-form");
+const playerNameInput = root.querySelector("#player-name");
+const nameError = root.querySelector("#name-error");
+const cancelNameButton = root.querySelector("#cancel-name-btn");
+const runResults = root.querySelector("#run-results");
+const resultsDialog = runResults.querySelector(".results-dialog");
+const finalRunTime = root.querySelector("#final-run-time");
+const achievementList = root.querySelector("#achievement-list");
+const submissionStatus = root.querySelector("#submission-status");
+const resultsLeaderboardsButton = root.querySelector("#results-leaderboards-btn");
+const playAgainButton = root.querySelector("#play-again-btn");
+const mainMenuButton = root.querySelector("#main-menu-btn");
 
 backgroundMusic.src = soundtrackUrl;
 const rollingSampleBytes = fetch(marbleRollingUrl).then((response) => {
@@ -207,6 +250,15 @@ let sfxReverb;
 let musicMuted = false;
 let touchStart;
 let touchTilt = new THREE.Vector2();
+const runTracker = new RunTracker(MAX_LEVELS);
+let localPlayer = loadLocalPlayer();
+let leaderboardTab = "monthly";
+let leaderboardCurrentPage = 1;
+let leaderboardRowsOnPage = 0;
+let leaderboardReturnOverlay = intro;
+let pendingNameAction = null;
+let pendingNameCancelAction = null;
+let latestRunResult = null;
 
 function mulberry32(seed) {
   return function random() {
@@ -1153,6 +1205,9 @@ function hideOverlays() {
   complete.classList.add("hidden");
   failed.classList.add("hidden");
   menuOverlay.classList.add("hidden");
+  leaderboardsOverlay.classList.add("hidden");
+  nameEntry.classList.add("hidden");
+  runResults.classList.add("hidden");
 }
 
 function showPlayingUi() {
@@ -1160,6 +1215,232 @@ function showPlayingUi() {
   menuButton.classList.remove("hidden");
   hint.classList.remove("hidden");
   objectiveGuide.classList.remove("hidden");
+}
+
+function elapsedRunTime(now = performance.now()) {
+  return runTracker.elapsed(now);
+}
+
+function updateRunTimer(now = performance.now()) {
+  if (!runTracker.active && runTracker.finalTimeMs <= 0) return;
+  runTimerValue.textContent = formatRunTime(elapsedRunTime(now));
+}
+
+function startNewRun() {
+  runTracker.start(performance.now());
+  latestRunResult = null;
+  runTimer.classList.remove("hidden");
+  updateRunTimer(performance.now());
+}
+
+function recordLevelSplit() {
+  if (runTracker.completeLevel(level, performance.now())) updateRunTimer();
+}
+
+function abortRun() {
+  runTracker.reset();
+  runTimer.classList.add("hidden");
+  runTimerValue.textContent = "00:00.00";
+}
+
+function createLeaderboardMessage(className, text) {
+  const message = document.createElement("div");
+  message.className = className;
+  message.textContent = text;
+  return message;
+}
+
+function renderLeaderboardRows(rows) {
+  leaderboardList.replaceChildren();
+  if (!rows.length) {
+    leaderboardList.append(createLeaderboardMessage("leaderboard-empty", "NO VALIDATED RUNS ON THIS PAGE"));
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  rows.forEach((row) => {
+    const item = document.createElement("div");
+    item.className = "leaderboard-row";
+    if (row.publicPlayerId === localPlayer.publicPlayerId) item.classList.add("is-player");
+    const rank = document.createElement("span");
+    rank.textContent = String(row.rank).padStart(2, "0");
+    const name = document.createElement("span");
+    name.className = "leaderboard-name";
+    name.textContent = row.displayName;
+    const time = document.createElement("strong");
+    time.textContent = formatRunTime(row.totalTimeMs);
+    const you = document.createElement("span");
+    you.className = "leaderboard-you";
+    you.textContent = row.publicPlayerId === localPlayer.publicPlayerId ? "YOU" : "";
+    item.append(rank, name, time, you);
+    fragment.append(item);
+  });
+  leaderboardList.append(fragment);
+}
+
+function renderPersonalBest(best) {
+  personalBestPanel.replaceChildren();
+  if (!best?.total_time_ms && !Number.isFinite(localPlayer.personalBest)) {
+    const empty = createLeaderboardMessage("leaderboard-empty", "NO COMPLETE RUN YET\nComplete all 20 levels to set your first time.");
+    personalBestPanel.append(empty);
+    return;
+  }
+  const timeMs = best?.total_time_ms ?? localPlayer.personalBest;
+  const splits = best?.level_splits ?? localPlayer.bestSplits ?? [];
+  const time = document.createElement("strong");
+  time.className = "personal-best-time";
+  time.textContent = formatRunTime(timeMs);
+  const ranks = document.createElement("div");
+  ranks.className = "personal-best-ranks";
+  if (best?.allTimeRank) ranks.append(Object.assign(document.createElement("span"), { textContent: `ALL TIME #${best.allTimeRank}` }));
+  if (best?.monthlyRank) ranks.append(Object.assign(document.createElement("span"), { textContent: `THIS MONTH #${best.monthlyRank}` }));
+  const splitList = document.createElement("div");
+  splitList.className = "split-list";
+  splits.forEach((split, index) => splitList.append(Object.assign(document.createElement("span"), {
+    textContent: `L${String(index + 1).padStart(2, "0")} ${formatRunTime(split)}`,
+  })));
+  personalBestPanel.append(time, ranks, splitList);
+}
+
+async function loadLeaderboard() {
+  leaderboardPage.textContent = String(leaderboardCurrentPage);
+  previousPageButton.disabled = leaderboardCurrentPage === 1;
+  leaderboardPeriod.textContent = leaderboardTab === "monthly" ? currentMonthLabel() : leaderboardTab === "all-time" ? "FASTEST COMPLETE RUNS" : (localPlayer.displayName || "LOCAL PLAYER");
+  const isPersonal = leaderboardTab === "personal";
+  leaderboardList.classList.toggle("hidden", isPersonal);
+  personalBestPanel.classList.toggle("hidden", !isPersonal);
+  leaderboardPagination.classList.toggle("hidden", isPersonal);
+  editNameButton.textContent = localPlayer.displayName ? "EDIT NAME" : "SET NAME";
+
+  if (isPersonal) {
+    personalBestPanel.replaceChildren(createLeaderboardMessage("leaderboard-loading", "LOADING PERSONAL BEST…"));
+    try {
+      const best = leaderboardConfigured ? await fetchPersonalBest(localPlayer) : null;
+      renderPersonalBest(best);
+    } catch {
+      renderPersonalBest(null);
+    }
+    return;
+  }
+
+  leaderboardList.replaceChildren(createLeaderboardMessage("leaderboard-loading", "CONTACTING SKYBALL NETWORK…"));
+  if (!leaderboardConfigured) {
+    leaderboardRowsOnPage = 0;
+    nextPageButton.disabled = true;
+    leaderboardList.replaceChildren(createLeaderboardMessage("leaderboard-empty", "GLOBAL LEADERBOARD UNAVAILABLE\nLocal personal best tracking remains active."));
+    return;
+  }
+  try {
+    const rows = await fetchLeaderboard(leaderboardTab, leaderboardCurrentPage);
+    leaderboardRowsOnPage = rows.length;
+    nextPageButton.disabled = rows.length < 50;
+    renderLeaderboardRows(rows);
+  } catch {
+    leaderboardRowsOnPage = 0;
+    nextPageButton.disabled = true;
+    leaderboardList.replaceChildren(createLeaderboardMessage("leaderboard-empty", "LEADERBOARD TEMPORARILY UNAVAILABLE\nGameplay and local timing are unaffected."));
+  }
+}
+
+function openLeaderboards(origin = intro) {
+  leaderboardReturnOverlay = origin;
+  [intro, complete, failed, menuOverlay, runResults, nameEntry].forEach((overlay) => overlay.classList.add("hidden"));
+  leaderboardsOverlay.classList.remove("hidden");
+  leaderboardTab = "monthly";
+  leaderboardCurrentPage = 1;
+  leaderboardTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.tab === leaderboardTab));
+  void loadLeaderboard();
+}
+
+function closeLeaderboards() {
+  leaderboardsOverlay.classList.add("hidden");
+  leaderboardReturnOverlay.classList.remove("hidden");
+  if (leaderboardReturnOverlay === menuOverlay) resumeButton.focus();
+  else leaderboardReturnOverlay.querySelector("button")?.focus();
+}
+
+function requestPlayerName(action, allowCancel = true, cancelAction = null) {
+  pendingNameAction = action;
+  pendingNameCancelAction = cancelAction;
+  nameError.textContent = "";
+  playerNameInput.value = localPlayer.displayName || "";
+  cancelNameButton.classList.toggle("hidden", !allowCancel);
+  [leaderboardsOverlay, runResults].forEach((overlay) => overlay.classList.add("hidden"));
+  nameEntry.classList.remove("hidden");
+  requestAnimationFrame(() => playerNameInput.focus());
+}
+
+async function savePlayerName() {
+  const displayName = sanitizePlayerName(playerNameInput.value).toUpperCase();
+  const error = validatePlayerName(displayName);
+  if (error) {
+    nameError.textContent = error;
+    return;
+  }
+  localPlayer.displayName = displayName;
+  saveLocalPlayer(localPlayer);
+  if (leaderboardConfigured) void updateRemoteName(localPlayer).catch(() => {});
+  nameEntry.classList.add("hidden");
+  const action = pendingNameAction;
+  pendingNameAction = null;
+  pendingNameCancelAction = null;
+  await action?.();
+}
+
+function renderRunResults(result) {
+  hideOverlays();
+  runResults.classList.remove("hidden");
+  finalRunTime.textContent = formatRunTime(runTracker.finalTimeMs);
+  achievementList.replaceChildren();
+  const achievements = [];
+  if (result.isPersonalBest) achievements.push("NEW PERSONAL BEST");
+  if (result.allTimeRank) achievements.push(`#${result.allTimeRank} ALL TIME`);
+  if (result.monthlyRank) achievements.push(`#${result.monthlyRank} THIS MONTH`);
+  achievements.forEach((text) => achievementList.append(Object.assign(document.createElement("span"), { textContent: text })));
+  const elevated = result.isPersonalBest || (result.allTimeRank && result.allTimeRank <= 10) || (result.monthlyRank && result.monthlyRank <= 10);
+  resultsDialog.classList.toggle("is-achievement", Boolean(elevated));
+  if (elevated) playAchievementSound();
+  submissionStatus.textContent = result.submitted
+    ? "VALIDATED RUN SAVED TO THE SKYBALL NETWORK"
+    : "LOCAL RESULT SAVED · GLOBAL SERVICE UNAVAILABLE";
+}
+
+async function finishRunSubmission() {
+  const isPersonalBest = updateLocalBest(localPlayer, runTracker.finalTimeMs, runTracker.splits);
+  const result = { isPersonalBest, submitted: false, allTimeRank: null, monthlyRank: null };
+  if (leaderboardConfigured && localPlayer.displayName) {
+    try {
+      const remote = await submitRun(localPlayer, runTracker.finalTimeMs, runTracker.splits);
+      if (remote?.validation_status === "valid") {
+        result.submitted = true;
+        result.allTimeRank = remote.all_time_rank || null;
+        result.monthlyRank = remote.monthly_rank || null;
+      }
+    } catch {
+      // Local PB remains authoritative when the network is unavailable.
+    }
+  }
+  latestRunResult = result;
+  renderRunResults(result);
+}
+
+function completeRun() {
+  if (!localPlayer.displayName) requestPlayerName(finishRunSubmission, true, finishRunSubmission);
+  else void finishRunSubmission();
+}
+
+function returnToMainMenu() {
+  hideOverlays();
+  abortRun();
+  level = 1;
+  buildLevel();
+  state = "intro";
+  paused = false;
+  restartButton.classList.add("hidden");
+  menuButton.classList.add("hidden");
+  hint.classList.add("hidden");
+  objectiveGuide.classList.add("hidden");
+  intro.classList.remove("hidden");
+  startButton.focus();
 }
 
 function pointInHole(x, z) {
@@ -1327,6 +1608,7 @@ function updateUnlock(delta) {
 
 function beginGoal() {
   if (state !== "playing") return;
+  recordLevelSplit();
   state = "goal";
   stateElapsed = 0;
   marbleVelocity.multiplyScalar(0.12);
@@ -1570,9 +1852,8 @@ function updateGoal(delta) {
   if (stateElapsed > 1.52) {
     state = "overlay";
     if (level === MAX_LEVELS) {
-      completeTitle.textContent = "Skyball complete";
-      completeCopy.textContent = "All twenty gates are unlocked. The skyway is clear.";
-      againButton.textContent = "PLAY AGAIN";
+      completeRun();
+      return;
     } else {
       completeTitle.textContent = "Level complete";
       completeCopy.textContent = "Gate traversed. Ready for the next board.";
@@ -2048,6 +2329,37 @@ function playCompletionArpeggio() {
   });
 }
 
+function playAchievementSound() {
+  if (!audioContext || !sfxInput) return;
+  const now = audioContext.currentTime + 0.02;
+  // Elevated E-flat minor flourish: the same tonal family as the gate cue,
+  // voiced more quickly with a longer shimmer tail for rare achievements.
+  const notes = [311.13, 369.99, 466.16, 554.37, 622.25, 739.99, 932.33, 1244.51];
+  notes.forEach((frequency, index) => {
+    const start = now + index * 0.042;
+    const oscillator = audioContext.createOscillator();
+    const shimmer = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const shimmerGain = audioContext.createGain();
+    oscillator.type = index % 2 ? "triangle" : "sine";
+    shimmer.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, start);
+    shimmer.frequency.setValueAtTime(frequency * 2.004, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.2, start + 0.009);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.18);
+    shimmerGain.gain.setValueAtTime(0.0001, start);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.05, start + 0.012);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.0001, start + 1.42);
+    oscillator.connect(gain).connect(sfxInput);
+    shimmer.connect(shimmerGain).connect(sfxInput);
+    oscillator.start(start);
+    shimmer.start(start);
+    oscillator.stop(start + 1.24);
+    shimmer.stop(start + 1.48);
+  });
+}
+
 function playUnlockSound() {
   if (!audioContext || !sfxInput) return;
   const now = audioContext.currentTime + 0.01;
@@ -2172,6 +2484,7 @@ function startGame() {
   state = "playing";
   paused = false;
   statusPill.textContent = "Find the key cube · receiver locked";
+  if (level === 1 && !runTracker.active) startNewRun();
   startAudio();
   root.scrollTop = 0;
   root.scrollLeft = 0;
@@ -2179,8 +2492,7 @@ function startGame() {
 }
 
 function advanceLevel() {
-  if (level === MAX_LEVELS) level = 1;
-  else level += 1;
+  level += 1;
   resetLevel();
 }
 
@@ -2199,6 +2511,7 @@ function animate(now) {
   const delta = Math.min((now - animate.lastTime) / 1000 || 0, 0.04);
   animate.lastTime = now;
   updateAquaticEnvironment(now / 1000);
+  if (runTracker.active) updateRunTimer(now);
 
   if (!paused) {
     if (state === "playing") {
@@ -2234,7 +2547,8 @@ window.addEventListener("keydown", (event) => {
     }
     return;
   }
-  if (event.code === "KeyR" && !["intro", "shattering"].includes(state)) {
+  const retryOverlayOpen = state === "overlay" && !failed.classList.contains("hidden");
+  if (event.code === "KeyR" && (["playing", "falling"].includes(state) || retryOverlayOpen)) {
     resetLevel();
     return;
   }
@@ -2285,13 +2599,73 @@ canvas.addEventListener("pointercancel", endTouch);
 canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 startButton.addEventListener("click", startGame);
+leaderboardButton.addEventListener("click", () => openLeaderboards(intro));
 restartButton.addEventListener("click", resetLevel);
 retryButton.addEventListener("click", resetLevel);
 againButton.addEventListener("click", advanceLevel);
 menuButton.addEventListener("click", openMenu);
 resumeButton.addEventListener("click", closeMenu);
 menuRestartButton.addEventListener("click", resetLevel);
+menuLeaderboardButton.addEventListener("click", () => openLeaderboards(menuOverlay));
 musicButton.addEventListener("click", toggleMusic);
+closeLeaderboardsButton.addEventListener("click", closeLeaderboards);
+
+leaderboardTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    leaderboardTab = tab.dataset.tab;
+    leaderboardCurrentPage = 1;
+    leaderboardTabs.forEach((candidate) => candidate.classList.toggle("is-active", candidate === tab));
+    void loadLeaderboard();
+  });
+});
+
+previousPageButton.addEventListener("click", () => {
+  if (leaderboardCurrentPage <= 1) return;
+  leaderboardCurrentPage -= 1;
+  void loadLeaderboard();
+});
+
+nextPageButton.addEventListener("click", () => {
+  if (leaderboardRowsOnPage < 50) return;
+  leaderboardCurrentPage += 1;
+  void loadLeaderboard();
+});
+
+editNameButton.addEventListener("click", () => {
+  const restoreLeaderboard = async () => {
+    leaderboardsOverlay.classList.remove("hidden");
+    await loadLeaderboard();
+  };
+  requestPlayerName(restoreLeaderboard, true, restoreLeaderboard);
+});
+
+nameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void savePlayerName();
+});
+
+playerNameInput.addEventListener("input", () => {
+  const sanitized = sanitizePlayerName(playerNameInput.value).toUpperCase();
+  if (playerNameInput.value !== sanitized) playerNameInput.value = sanitized;
+  nameError.textContent = "";
+});
+
+cancelNameButton.addEventListener("click", () => {
+  nameEntry.classList.add("hidden");
+  const cancelAction = pendingNameCancelAction;
+  pendingNameAction = null;
+  pendingNameCancelAction = null;
+  void cancelAction?.();
+});
+
+resultsLeaderboardsButton.addEventListener("click", () => openLeaderboards(runResults));
+playAgainButton.addEventListener("click", () => {
+  level = 1;
+  buildLevel();
+  startNewRun();
+  startGame();
+});
+mainMenuButton.addEventListener("click", returnToMainMenu);
 
 backgroundMusic.addEventListener("error", () => {
   musicButton.classList.add("has-error");
