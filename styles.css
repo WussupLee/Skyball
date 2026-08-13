@@ -55,6 +55,11 @@ button:focus-visible,
   isolation: isolate;
   background: #0757cf;
   outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
 .sky-gradient {
@@ -887,15 +892,26 @@ button:focus-visible,
   }
 
   .retro-console {
-    top: 9px;
-    right: 9px;
-    width: calc(100% - 122px);
-    padding: 5px 6px;
-    border-radius: 23px;
+    top: 8px;
+    right: 8px;
+    width: min(250px, calc(100% - 138px));
+    gap: 5px;
+    padding: 4px 5px;
+    border-radius: 20px;
   }
 
   .retro-display {
-    padding: 7px 9px;
+    grid-template-rows: auto 5px;
+    padding: 5px 7px;
+    row-gap: 3px;
+  }
+
+  .level-pill {
+    font-size: 7px;
+  }
+
+  .level-track {
+    height: 5px;
   }
 
   .status-pill {
@@ -903,32 +919,54 @@ button:focus-visible,
   }
 
   .chrome-btn {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .restart-icon {
+    width: 18px;
+    height: 18px;
   }
 
   .control-hint {
-    right: 9px;
-    bottom: 9px;
-    max-width: calc(100% - 74px);
-    overflow: hidden;
-    font-size: 8px;
-    text-overflow: ellipsis;
+    display: none !important;
   }
 
   .music-toggle {
-    left: 9px;
-    bottom: 9px;
-    width: 108px;
-    height: 42px;
+    left: 8px;
+    bottom: 8px;
+    width: 94px;
+    height: 38px;
+    border-radius: 21px 9px 21px 9px;
+  }
+
+  .music-toggle::before {
+    left: 5px;
+    top: 4px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .music-toggle::after,
+  .music-toggle.is-muted::after {
+    left: 38px;
+    top: 13px;
+    font-size: 6px;
+  }
+
+  .music-toggle svg {
+    left: 11px;
+    top: 10px;
+    width: 16px;
+    height: 16px;
   }
 
   .countdown {
-    left: 10px;
-    top: 14px;
+    left: 8px;
+    top: 16px;
     min-width: 0;
     padding: 0;
-    font-size: clamp(58px, 17vw, 84px);
+    font-size: clamp(42px, 13vw, 60px);
   }
 
   .countdown::after {

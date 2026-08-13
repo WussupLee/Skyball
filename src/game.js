@@ -39,6 +39,10 @@ const backgroundMusic = root.querySelector("#bg-music");
 const loading = root.querySelector("#loading");
 
 backgroundMusic.src = soundtrackUrl;
+const rollingSampleBytes = fetch(marbleRollingUrl).then((response) => {
+  if (!response.ok) throw new Error(`Rolling sound failed to load (${response.status})`);
+  return response.arrayBuffer();
+});
 
 const MAX_LEVELS = 20;
 const ROUND_SECONDS = 20;
@@ -263,8 +267,19 @@ function setLevelParameters() {
   levelPill.textContent = `LEVEL ${String(level).padStart(2, "0")} / ${MAX_LEVELS}`;
   levelProgress.style.width = `${(level / MAX_LEVELS) * 100}%`;
 
-  const cameraScale = 1 + (boardRadius - 4.55) * 0.16;
-  camera.position.set(0, 12.2 * cameraScale, 9.2 * cameraScale);
+  updateCameraFraming();
+}
+
+function updateCameraFraming() {
+  const width = Math.max(root.clientWidth, 1);
+  const height = Math.max(root.clientHeight, 1);
+  const aspect = width / height;
+  const levelScale = 1 + (boardRadius - 4.55) * 0.16;
+  // A perspective camera's vertical field of view stays fixed as the viewport
+  // narrows, which crops the disc on phones. Pull back only in portrait layouts
+  // so the entire playable rim remains visible without changing desktop scale.
+  const portraitScale = THREE.MathUtils.clamp(0.88 / aspect, 1, 1.56);
+  camera.position.set(0, 12.2 * levelScale * portraitScale, 9.2 * levelScale * portraitScale);
   camera.lookAt(0, 0, 0);
 }
 
@@ -1496,11 +1511,6 @@ function ensureAudio() {
   // Use the supplied real marble recording as the main rolling voice. A
   // dedicated long convolution tail gives it the requested spacious reverb,
   // while the gain node lets gameplay velocity silence it completely at rest.
-  const sampleElement = new Audio(marbleRollingUrl);
-  sampleElement.loop = true;
-  sampleElement.preload = "auto";
-  sampleElement.volume = 1;
-  const sampleSource = audioContext.createMediaElementSource(sampleElement);
   const sampleTone = audioContext.createBiquadFilter();
   sampleTone.type = "lowpass";
   sampleTone.frequency.value = 5200;
@@ -1513,7 +1523,7 @@ function ensureAudio() {
   sampleReverb.buffer = createImpulseResponse(audioContext, 7.4, 2.15);
   const sampleWet = audioContext.createGain();
   sampleWet.gain.value = 0.92;
-  sampleSource.connect(sampleTone).connect(sampleGain);
+  sampleTone.connect(sampleGain);
   sampleGain.connect(sampleDry).connect(rollingBus);
   sampleGain.connect(sampleReverb).connect(sampleWet).connect(rollingBus);
 
@@ -1570,7 +1580,8 @@ function ensureAudio() {
   impactSource.start();
 
   rollingAudio = {
-    sampleElement,
+    sampleSource: undefined,
+    sampleLoading: undefined,
     sampleGain,
     sampleTone,
     noiseSource,
@@ -1587,20 +1598,41 @@ function ensureAudio() {
   };
 }
 
+async function startRollingSample() {
+  if (!rollingAudio || rollingAudio.sampleSource || rollingAudio.sampleLoading) return rollingAudio?.sampleLoading;
+  rollingAudio.sampleLoading = rollingSampleBytes
+    .then((bytes) => audioContext.decodeAudioData(bytes.slice(0)))
+    .then((buffer) => {
+      if (rollingAudio.sampleSource) return;
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      source.playbackRate.value = 0.76;
+      source.connect(rollingAudio.sampleTone);
+      source.start();
+      rollingAudio.sampleSource = source;
+    })
+    .catch((error) => {
+      console.warn("The supplied marble rolling sound could not start.", error);
+      rollingAudio.sampleLoading = undefined;
+    });
+  return rollingAudio.sampleLoading;
+}
+
 async function startAudio() {
   ensureAudio();
-  const rollingPlayback = rollingAudio.sampleElement.play();
-  if (audioContext.state === "suspended") await audioContext.resume();
-  try {
-    await rollingPlayback;
-  } catch (error) {
-    console.warn("The supplied marble rolling sound could not start.", error);
-  }
+  // Invoke every mobile-restricted audio operation synchronously inside the
+  // user's tap, then await their results. Web Audio owns the rolling loop so
+  // Safari only has one HTML media element competing for playback resources.
+  const resumePlayback = audioContext.state === "suspended" ? audioContext.resume() : Promise.resolve();
+  void startRollingSample();
   backgroundMusic.volume = 0.5;
   backgroundMusic.muted = musicMuted;
+  const musicPlayback = musicMuted ? Promise.resolve() : backgroundMusic.play();
+  await resumePlayback;
   if (!musicMuted) {
     try {
-      await backgroundMusic.play();
+      await musicPlayback;
       musicButton.classList.remove("has-error");
     } catch (error) {
       console.warn("Skyball background music could not start.", error);
@@ -1635,7 +1667,9 @@ function setRollingVolume(speed) {
   rollingAudio.edgeFilter.frequency.setTargetAtTime(3250 - normalized * 520, now, 0.12);
   rollingAudio.impactFilter.frequency.setTargetAtTime(1780 + normalized * 1350, now, 0.08);
   rollingAudio.sampleTone.frequency.setTargetAtTime(3600 + normalized * 3100, now, 0.12);
-  rollingAudio.sampleElement.playbackRate = 0.76 + normalized * 0.54;
+  if (rollingAudio.sampleSource) {
+    rollingAudio.sampleSource.playbackRate.setTargetAtTime(0.76 + normalized * 0.54, now, 0.08);
+  }
   rollingAudio.noiseSource.playbackRate.setTargetAtTime(0.92 + normalized * 0.1, now, 0.1);
   rollingAudio.impactSource.playbackRate.setTargetAtTime(0.52 + normalized * 2.05, now, 0.08);
 }
@@ -1814,6 +1848,7 @@ function resize() {
   const width = root.clientWidth;
   const height = root.clientHeight;
   camera.aspect = width / height;
+  updateCameraFraming();
   camera.updateProjectionMatrix();
   renderer.setSize(width, height, false);
 }
@@ -1878,12 +1913,16 @@ window.addEventListener("blur", () => {
 window.addEventListener("resize", resize);
 
 canvas.addEventListener("pointerdown", (event) => {
+  if (event.cancelable) event.preventDefault();
+  if (audioContext?.state === "suspended") void audioContext.resume();
+  void startRollingSample();
   touchStart = new THREE.Vector2(event.clientX, event.clientY);
   canvas.setPointerCapture(event.pointerId);
 });
 
 canvas.addEventListener("pointermove", (event) => {
   if (!touchStart) return;
+  if (event.cancelable) event.preventDefault();
   touchTilt.set(
     THREE.MathUtils.clamp((event.clientX - touchStart.x) / 85, -1, 1),
     THREE.MathUtils.clamp((event.clientY - touchStart.y) / 85, -1, 1),
@@ -1898,6 +1937,7 @@ function endTouch(event) {
 
 canvas.addEventListener("pointerup", endTouch);
 canvas.addEventListener("pointercancel", endTouch);
+canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 startButton.addEventListener("click", startGame);
 restartButton.addEventListener("click", resetLevel);
