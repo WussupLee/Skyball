@@ -15,6 +15,7 @@ import {
   leaderboardConfigured,
   loadLocalPlayer,
   sanitizePlayerName,
+  sanitizePlayerNameInput,
   saveLocalPlayer,
   submitRun,
   updateLocalBest,
@@ -2567,6 +2568,12 @@ function animate(now) {
 animate.lastTime = performance.now();
 
 window.addEventListener("keydown", (event) => {
+  const target = event.target;
+  const isTextEntry = target instanceof HTMLInputElement
+    || target instanceof HTMLTextAreaElement
+    || target?.isContentEditable;
+  if (isTextEntry) return;
+
   const controlledKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyW", "KeyA", "KeyS", "KeyD", "KeyR", "Escape", "Space"];
   if (controlledKeys.includes(event.code)) event.preventDefault();
   if (event.code === "Space" && state === "overlay") {
@@ -2675,7 +2682,7 @@ nameForm.addEventListener("submit", (event) => {
 });
 
 playerNameInput.addEventListener("input", () => {
-  const sanitized = sanitizePlayerName(playerNameInput.value).toUpperCase();
+  const sanitized = sanitizePlayerNameInput(playerNameInput.value).toUpperCase();
   if (playerNameInput.value !== sanitized) playerNameInput.value = sanitized;
   nameError.textContent = "";
 });

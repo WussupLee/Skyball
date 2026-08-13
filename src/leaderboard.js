@@ -2,8 +2,9 @@ const STORAGE_KEY = "skyball.player.v1";
 const RUNS_PER_PAGE = 50;
 const GAME_VERSION = "1.0.0";
 
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const environment = import.meta.env || {};
+const supabaseUrl = (environment.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+const supabaseKey = environment.VITE_SUPABASE_ANON_KEY || "";
 
 export const leaderboardConfigured = Boolean(supabaseUrl && supabaseKey);
 
@@ -15,12 +16,15 @@ export function formatRunTime(milliseconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`;
 }
 
-export function sanitizePlayerName(value) {
+export function sanitizePlayerNameInput(value) {
   return String(value || "")
-    .trim()
     .replace(/\s+/g, " ")
     .replace(/[^A-Za-z0-9 _.-]/g, "")
     .slice(0, 12);
+}
+
+export function sanitizePlayerName(value) {
+  return sanitizePlayerNameInput(value).trim();
 }
 
 export function validatePlayerName(value) {
