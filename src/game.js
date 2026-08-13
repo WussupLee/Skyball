@@ -279,14 +279,38 @@ function createAquaticEnvironment() {
   scene.add(seabed);
 
   const bodyGeometry = new THREE.SphereGeometry(1, 16, 10);
-  const eyeGeometry = new THREE.SphereGeometry(1, 10, 7);
-  const accentGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const accentGeometry = new THREE.SphereGeometry(1, 14, 8);
   const tailGeometry = new THREE.BufferGeometry();
   tailGeometry.setAttribute(
     "position",
-    new THREE.Float32BufferAttribute([0, 0, 0, -1, 0, 0.72, -1, 0, -0.72], 3),
+    new THREE.Float32BufferAttribute([
+      0, 0, 0, -0.68, 0, 0.12, -1.08, 0, 0.82,
+      0, 0, 0, -1.08, 0, -0.82, -0.68, 0, -0.12,
+    ], 3),
   );
   tailGeometry.computeVertexNormals();
+  const pectoralGeometry = new THREE.BufferGeometry();
+  pectoralGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute([
+      0.18, 0, 0, -0.3, 0, 0.08, -0.88, 0, 0.64,
+      0.18, 0, 0, -0.88, 0, 0.64, -0.45, 0, 0.02,
+    ], 3),
+  );
+  pectoralGeometry.computeVertexNormals();
+  const dorsalGeometry = new THREE.BufferGeometry();
+  dorsalGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute([-0.72, 0, 0, 0.48, 0, 0, -0.18, 0.82, 0], 3),
+  );
+  dorsalGeometry.computeVertexNormals();
+  const gillGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0.54, 0, -0.42),
+    new THREE.Vector3(0.66, 0, -0.2),
+    new THREE.Vector3(0.7, 0, 0),
+    new THREE.Vector3(0.66, 0, 0.2),
+    new THREE.Vector3(0.54, 0, 0.42),
+  ]);
   const colors = [0x2af2ff, 0xff718f, 0xffdd3f, 0x55f58a, 0x9c83ff, 0xff9d45, 0x5cbcff];
   const random = mulberry32(0xa9f120);
 
@@ -321,13 +345,13 @@ function createAquaticEnvironment() {
     tail.scale.setScalar(size * 0.95);
     group.add(tail);
 
-    const stripe = new THREE.Mesh(
+    const backMark = new THREE.Mesh(
       accentGeometry,
       new THREE.MeshBasicMaterial({ color: accentColor, fog: false, toneMapped: false }),
     );
-    stripe.position.set(size * 0.08, size * 0.56, 0);
-    stripe.scale.set(size * 1.5, size * 0.08, size * 0.22);
-    group.add(stripe);
+    backMark.position.set(-size * 0.03, size * 0.53, 0);
+    backMark.scale.set(size * 0.92, size * 0.075, size * 0.24);
+    group.add(backMark);
 
     const finMaterial = new THREE.MeshBasicMaterial({
       color: accentColor,
@@ -337,39 +361,33 @@ function createAquaticEnvironment() {
       fog: false,
       toneMapped: false,
     });
-    const sideFin = new THREE.Mesh(tailGeometry, finMaterial);
-    sideFin.position.set(-size * 0.05, -size * 0.05, size * 0.47);
-    sideFin.rotation.y = Math.PI * 0.54;
-    sideFin.scale.setScalar(size * 0.42);
-    group.add(sideFin);
+    const pectoralFins = [-1, 1].map((side) => {
+      const fin = new THREE.Mesh(pectoralGeometry, finMaterial.clone());
+      fin.position.set(size * 0.28, -size * 0.02, side * size * 0.47);
+      fin.scale.set(size * 0.56, size * 0.56, side * size * 0.56);
+      group.add(fin);
+      return fin;
+    });
 
-    const dorsalFin = new THREE.Mesh(tailGeometry, finMaterial.clone());
-    dorsalFin.position.set(-size * 0.12, size * 0.5, 0);
-    dorsalFin.rotation.x = Math.PI / 2;
-    dorsalFin.rotation.y = Math.PI * 0.58;
-    dorsalFin.scale.setScalar(size * 0.36);
+    const dorsalFin = new THREE.Mesh(dorsalGeometry, finMaterial.clone());
+    dorsalFin.position.set(-size * 0.12, size * 0.42, 0);
+    dorsalFin.scale.setScalar(size * 0.62);
     group.add(dorsalFin);
 
-    const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x08284d, fog: false, toneMapped: false });
-    const eyeHighlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, toneMapped: false });
-    [-1, 1].forEach((side) => {
-      const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-      eye.position.set(size * 1.18, size * 0.2, side * size * 0.55);
-      eye.scale.setScalar(size * 0.14);
-      group.add(eye);
-
-      const highlight = new THREE.Mesh(eyeGeometry, eyeHighlightMaterial);
-      highlight.position.set(size * 1.27, size * 0.25, side * size * 0.6);
-      highlight.scale.setScalar(size * 0.052);
-      group.add(highlight);
-    });
+    const gill = new THREE.Line(
+      gillGeometry,
+      new THREE.LineBasicMaterial({ color: accentColor, transparent: true, opacity: 0.88, fog: false, toneMapped: false }),
+    );
+    gill.position.y = size * 0.5;
+    gill.scale.setScalar(size);
+    group.add(gill);
 
     group.renderOrder = -3;
     scene.add(group);
     fishSchool.push({
       group,
       tail,
-      sideFin,
+      pectoralFins,
       radius: THREE.MathUtils.lerp(3.1, 11.8, random()),
       angle: random() * Math.PI * 2,
       speed: THREE.MathUtils.lerp(0.055, 0.16, random()) * (random() > 0.5 ? 1 : -1),
@@ -393,7 +411,9 @@ function updateAquaticEnvironment(time) {
     fish.group.position.set(x, fish.depth + Math.sin(time * 0.7 + fish.phase) * 0.11, z);
     fish.group.rotation.y = -Math.atan2(dz, dx);
     fish.tail.rotation.y = Math.sin(time * 6.4 + fish.phase) * 0.42;
-    fish.sideFin.rotation.x = Math.sin(time * 4.8 + fish.phase) * 0.22;
+    fish.pectoralFins.forEach((fin, index) => {
+      fin.rotation.x = Math.sin(time * 4.8 + fish.phase + index * Math.PI) * 0.18;
+    });
   });
 }
 
