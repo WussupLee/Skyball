@@ -195,6 +195,7 @@ let goalUnlocked = false;
 let fallTarget;
 let fallHazard;
 let fallReason = "";
+let fallCommitted = false;
 let lockedReminderCooldown = 0;
 let cubePulse = 0;
 let rollingAudio;
@@ -279,7 +280,17 @@ function createAquaticEnvironment() {
   scene.add(seabed);
 
   const bodyGeometry = new THREE.SphereGeometry(1, 16, 10);
-  const accentGeometry = new THREE.SphereGeometry(1, 14, 8);
+  const dorsalMarkGeometry = new THREE.BufferGeometry();
+  dorsalMarkGeometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute([
+      0.95, 0, 0, 0.35, 0, 0.07, -0.28, 0, 0.25,
+      0.95, 0, 0, -0.28, 0, 0.25, -0.88, 0, 0,
+      0.95, 0, 0, -0.88, 0, 0, -0.28, 0, -0.25,
+      0.95, 0, 0, -0.28, 0, -0.25, 0.35, 0, -0.07,
+    ], 3),
+  );
+  dorsalMarkGeometry.computeVertexNormals();
   const tailGeometry = new THREE.BufferGeometry();
   tailGeometry.setAttribute(
     "position",
@@ -301,7 +312,10 @@ function createAquaticEnvironment() {
   const dorsalGeometry = new THREE.BufferGeometry();
   dorsalGeometry.setAttribute(
     "position",
-    new THREE.Float32BufferAttribute([-0.72, 0, 0, 0.48, 0, 0, -0.18, 0.82, 0], 3),
+    new THREE.Float32BufferAttribute([
+      0.66, 0, 0, 0.2, 0.17, 0, -0.3, 0.84, 0,
+      0.66, 0, 0, -0.3, 0.84, 0, -0.82, 0, 0,
+    ], 3),
   );
   dorsalGeometry.computeVertexNormals();
   const gillGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -346,11 +360,11 @@ function createAquaticEnvironment() {
     group.add(tail);
 
     const backMark = new THREE.Mesh(
-      accentGeometry,
-      new THREE.MeshBasicMaterial({ color: accentColor, fog: false, toneMapped: false }),
+      dorsalMarkGeometry,
+      new THREE.MeshBasicMaterial({ color: accentColor, side: THREE.DoubleSide, fog: false, toneMapped: false }),
     );
-    backMark.position.set(-size * 0.03, size * 0.53, 0);
-    backMark.scale.set(size * 0.92, size * 0.075, size * 0.24);
+    backMark.position.set(-size * 0.03, size * 0.535, 0);
+    backMark.scale.set(size * 0.94, size * 0.94, size * 0.94);
     group.add(backMark);
 
     const finMaterial = new THREE.MeshBasicMaterial({
@@ -1088,6 +1102,7 @@ function buildLevel() {
   fallTarget = undefined;
   fallHazard = undefined;
   fallReason = "";
+  fallCommitted = false;
   lockedReminderCooldown = 0;
   statusPill.textContent = "Find the key cube · receiver locked";
   stateElapsed = 0;
@@ -1169,6 +1184,7 @@ function beginFall(reason, hazard) {
   fallReason = reason;
   fallTarget = hazard ? new THREE.Vector2(hazard.x, hazard.z) : undefined;
   fallHazard = hazard;
+  fallCommitted = false;
   bounceVelocity = reason === "hole" ? -0.08 : -1.4;
   statusPill.textContent = reason === "hole" ? "Cutout detected" : "Marble lost";
   setRollingVolume(0);
@@ -1373,6 +1389,21 @@ function updateFall(delta) {
     const toCenter = fallTarget.clone().sub(marblePosition);
     const distance = Math.max(toCenter.length(), 0.0001);
     const inward = toCenter.multiplyScalar(1 / distance);
+    const top = SURFACE_Y;
+    const bottom = SURFACE_Y - BOARD_THICKNESS;
+    const noReturnRadius = Math.max(fallHazard.r - MARBLE_RADIUS * 1.08, 0.02);
+
+    // Until the center crosses the inner threshold, tilt and momentum can
+    // still carry the marble back across the lip. Once it drops too deep or
+    // moves too far toward the center, the fall becomes irreversible.
+    if (distance <= noReturnRadius || marble.position.y < top - MARBLE_RADIUS * 0.28) {
+      fallCommitted = true;
+    }
+    if (!fallCommitted) {
+      const input = inputVector();
+      marbleVelocity.x += input.horizontal * currentAcceleration * 0.82 * delta;
+      marbleVelocity.y += input.vertical * currentAcceleration * 0.82 * delta;
+    }
     const overhang = THREE.MathUtils.clamp(
       (fallHazard.r - distance + MARBLE_RADIUS * 0.16) / (MARBLE_RADIUS * 0.9),
       0,
@@ -1395,8 +1426,6 @@ function updateFall(delta) {
     const tangentDirection = new THREE.Vector2(-radialDirection.y, radialDirection.x);
     let radialSpeed = marbleVelocity.dot(radialDirection);
     let tangentSpeed = marbleVelocity.dot(tangentDirection);
-    const top = SURFACE_Y;
-    const bottom = SURFACE_Y - BOARD_THICKNESS;
 
     const applyContactVelocity = (normalRadial, normalVertical, restitution = 0.16) => {
       const normalSpeed = radialSpeed * normalRadial + bounceVelocity * normalVertical;
@@ -1443,6 +1472,32 @@ function updateFall(delta) {
       radialDirection.y * radialSpeed + tangentDirection.y * tangentSpeed,
     );
     marble.position.y = nextHeight;
+
+    const exitThreshold = fallHazard.r - MARBLE_RADIUS * 0.16;
+    const escapedRim = (
+      !fallCommitted
+      && radialDistance >= exitThreshold
+      && nextHeight > top - MARBLE_RADIUS * 0.18
+      && radialSpeed > 0.02
+    );
+    if (escapedRim) {
+      state = "playing";
+      stateElapsed = 0;
+      fallReason = "";
+      fallTarget = undefined;
+      fallHazard = undefined;
+      fallCommitted = false;
+      bounceHeight = 0.018;
+      bounceVelocity = Math.max(0.18, Math.abs(bounceVelocity) * 0.14);
+      marbleVelocity.multiplyScalar(0.9);
+      marble.position.set(
+        marblePosition.x,
+        SURFACE_Y + MARBLE_RADIUS + bounceHeight,
+        marblePosition.y,
+      );
+      statusPill.textContent = goalUnlocked ? "Gate open · enter the receiver" : "Recovered · find the key cube";
+      return;
+    }
   } else {
     bounceVelocity -= 11.8 * delta;
     marblePosition.addScaledVector(marbleVelocity, delta * 0.92);
