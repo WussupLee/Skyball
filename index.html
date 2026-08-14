@@ -29,6 +29,7 @@
         <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8h16v8zM4 9V7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2H4z" /></symbol>
         <symbol id="icon-person" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5.33 0-8 2.67-8 5v3h16v-3c0-2.33-2.67-5-8-5z" /></symbol>
         <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65-2-3.46-2.49 1a7.1 7.1 0 0 0-1.69-.98L15 3.27h-4l-.4 2.66c-.61.25-1.17.58-1.69.98l-2.49-1-2 3.46 2.11 1.65c-.05.32-.08.66-.08.98s.03.66.08.98l-2.11 1.65 2 3.46 2.49-1c.52.4 1.08.73 1.69.98l.4 2.66h4l.4-2.66c.61-.25 1.17-.58 1.69-.98l2.49 1 2-3.46-2.15-1.65zM13 15.5A3.5 3.5 0 1 1 13 8a3.5 3.5 0 0 1 0 7.5z" /></symbol>
       </svg>
       <div class="sky-gradient" aria-hidden="true"></div>
       <div class="cloud cloud-a" aria-hidden="true"></div>
@@ -93,6 +94,7 @@
           <div class="menu-actions intro-actions">
             <button id="start-btn" class="primary-btn" type="button"><span>ENTER LEVEL 01</span><svg class="button-icon" aria-hidden="true"><use href="#icon-play" /></svg></button>
             <button id="leaderboards-btn" class="secondary-btn" type="button"><span>LEADERBOARDS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-leaderboard" /></svg></button>
+            <button id="settings-btn" class="secondary-btn" type="button"><span>SETTINGS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-settings" /></svg></button>
           </div>
         </div>
       </section>
@@ -125,9 +127,46 @@
           <div class="menu-actions">
             <button id="resume-btn" class="primary-btn" type="button"><span>RESUME</span><svg class="button-icon" aria-hidden="true"><use href="#icon-play" /></svg></button>
             <button id="menu-restart-btn" class="secondary-btn" type="button"><span>RESTART LEVEL</span><svg class="button-icon" aria-hidden="true"><use href="#icon-restart" /></svg></button>
+            <button id="menu-settings-btn" class="secondary-btn" type="button"><span>SETTINGS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-settings" /></svg></button>
             <button id="menu-leaderboards-btn" class="secondary-btn" type="button"><span>LEADERBOARDS</span><svg class="button-icon" aria-hidden="true"><use href="#icon-leaderboard" /></svg></button>
             <button id="menu-main-menu-btn" class="secondary-btn" type="button"><span>MAIN MENU</span><svg class="button-icon" aria-hidden="true"><use href="#icon-home" /></svg></button>
           </div>
+        </div>
+      </section>
+
+      <section id="settings" class="overlay hidden">
+        <div class="dialog settings-dialog" data-panel-label="SKYBALL // SETTINGS">
+          <div class="dialog-screen">
+            <h2>SETTINGS</h2>
+            <p>Audio and control preferences</p>
+          </div>
+          <div class="settings-screen">
+            <div class="setting-control">
+              <label for="music-volume">MUSIC LEVEL <output id="music-volume-value" for="music-volume">50%</output></label>
+              <input id="music-volume" type="range" min="0" max="100" step="1" value="50" />
+            </div>
+            <div class="setting-control">
+              <label for="sfx-volume">SOUND EFFECT LEVEL <output id="sfx-volume-value" for="sfx-volume">100%</output></label>
+              <input id="sfx-volume" type="range" min="0" max="100" step="1" value="100" />
+            </div>
+            <div class="setting-control">
+              <label for="control-sensitivity">TILT SENSITIVITY <output id="control-sensitivity-value" for="control-sensitivity">100%</output></label>
+              <input id="control-sensitivity" type="range" min="50" max="150" step="5" value="100" />
+            </div>
+            <div class="setting-toggles">
+              <label class="setting-toggle" for="invert-horizontal">
+                <span>INVERT HORIZONTAL</span>
+                <input id="invert-horizontal" type="checkbox" />
+                <span class="toggle-track" aria-hidden="true"><span></span></span>
+              </label>
+              <label class="setting-toggle" for="invert-vertical">
+                <span>INVERT VERTICAL</span>
+                <input id="invert-vertical" type="checkbox" />
+                <span class="toggle-track" aria-hidden="true"><span></span></span>
+              </label>
+            </div>
+          </div>
+          <button id="close-settings-btn" class="primary-btn" type="button"><span>BACK</span><svg class="button-icon" aria-hidden="true"><use href="#icon-back" /></svg></button>
         </div>
       </section>
 

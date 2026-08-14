@@ -23,6 +23,7 @@ import {
   validatePlayerName,
 } from "./leaderboard.js";
 import { RunTracker } from "./run-tracker.js";
+import { loadSettings, saveSettings } from "./settings.js";
 
 const root = document.querySelector("#skyball-game");
 const canvas = root.querySelector("#game-canvas");
@@ -36,6 +37,18 @@ const menuButton = root.querySelector("#menu-btn");
 const resumeButton = root.querySelector("#resume-btn");
 const menuRestartButton = root.querySelector("#menu-restart-btn");
 const menuMainMenuButton = root.querySelector("#menu-main-menu-btn");
+const settingsButton = root.querySelector("#settings-btn");
+const menuSettingsButton = root.querySelector("#menu-settings-btn");
+const settingsOverlay = root.querySelector("#settings");
+const closeSettingsButton = root.querySelector("#close-settings-btn");
+const musicVolumeInput = root.querySelector("#music-volume");
+const musicVolumeValue = root.querySelector("#music-volume-value");
+const sfxVolumeInput = root.querySelector("#sfx-volume");
+const sfxVolumeValue = root.querySelector("#sfx-volume-value");
+const sensitivityInput = root.querySelector("#control-sensitivity");
+const sensitivityValue = root.querySelector("#control-sensitivity-value");
+const invertHorizontalInput = root.querySelector("#invert-horizontal");
+const invertVerticalInput = root.querySelector("#invert-vertical");
 const startButton = root.querySelector("#start-btn");
 const retryButton = root.querySelector("#retry-btn");
 const againButton = root.querySelector("#again-btn");
@@ -258,6 +271,8 @@ let leaderboardTab = "monthly";
 let leaderboardCurrentPage = 1;
 let leaderboardRowsOnPage = 0;
 let leaderboardReturnOverlay = intro;
+let settingsReturnOverlay = intro;
+let userSettings = loadSettings();
 let pendingNameAction = null;
 let pendingNameCancelAction = null;
 let latestRunResult = null;
@@ -1226,6 +1241,7 @@ function hideOverlays() {
   leaderboardsOverlay.classList.add("hidden");
   nameEntry.classList.add("hidden");
   runResults.classList.add("hidden");
+  settingsOverlay.classList.add("hidden");
 }
 
 function showPlayingUi() {
@@ -1380,6 +1396,50 @@ function closeLeaderboards() {
   else leaderboardReturnOverlay.querySelector("button")?.focus();
 }
 
+function syncSettingsControls() {
+  musicVolumeInput.value = String(userSettings.musicVolume);
+  musicVolumeValue.value = `${Math.round(userSettings.musicVolume)}%`;
+  sfxVolumeInput.value = String(userSettings.sfxVolume);
+  sfxVolumeValue.value = `${Math.round(userSettings.sfxVolume)}%`;
+  sensitivityInput.value = String(userSettings.sensitivity);
+  sensitivityValue.value = `${Math.round(userSettings.sensitivity)}%`;
+  invertHorizontalInput.checked = userSettings.invertHorizontal;
+  invertVerticalInput.checked = userSettings.invertVertical;
+}
+
+function applyAudioSettings() {
+  backgroundMusic.volume = userSettings.musicVolume / 100;
+  if (!sfxInput) return;
+  const level = userSettings.sfxVolume / 100;
+  if (audioContext) sfxInput.gain.setTargetAtTime(level, audioContext.currentTime, 0.025);
+  else sfxInput.gain.value = level;
+}
+
+function persistSettings() {
+  userSettings = saveSettings(userSettings);
+  syncSettingsControls();
+  applyAudioSettings();
+}
+
+function openSettings(origin = intro) {
+  settingsReturnOverlay = origin;
+  hideOverlays();
+  syncSettingsControls();
+  settingsOverlay.classList.remove("hidden");
+  root.scrollTop = 0;
+  root.scrollLeft = 0;
+  musicVolumeInput.focus();
+}
+
+function closeSettings() {
+  settingsOverlay.classList.add("hidden");
+  settingsReturnOverlay.classList.remove("hidden");
+  root.scrollTop = 0;
+  root.scrollLeft = 0;
+  if (settingsReturnOverlay === menuOverlay) menuSettingsButton.focus();
+  else settingsButton.focus();
+}
+
 function requestPlayerName(action, allowCancel = true, cancelAction = null) {
   pendingNameAction = action;
   pendingNameCancelAction = cancelAction;
@@ -1484,13 +1544,16 @@ function inputVector() {
   if (keys.has("ArrowDown") || keys.has("KeyS")) vertical += 1;
   horizontal = THREE.MathUtils.clamp(horizontal + touchTilt.x, -1, 1);
   vertical = THREE.MathUtils.clamp(vertical + touchTilt.y, -1, 1);
+  if (userSettings.invertHorizontal) horizontal *= -1;
+  if (userSettings.invertVertical) vertical *= -1;
   return { horizontal, vertical };
 }
 
 function updateBoardTilt(delta) {
   const input = inputVector();
-  const targetX = input.vertical * currentMaxTilt;
-  const targetZ = -input.horizontal * currentMaxTilt;
+  const sensitivity = userSettings.sensitivity / 100;
+  const targetX = input.vertical * currentMaxTilt * sensitivity;
+  const targetZ = -input.horizontal * currentMaxTilt * sensitivity;
   const response = 1 - Math.exp(-delta * 5.4);
   rig.rotation.x = THREE.MathUtils.lerp(rig.rotation.x, targetX, response);
   rig.rotation.z = THREE.MathUtils.lerp(rig.rotation.z, targetZ, response);
@@ -2093,6 +2156,7 @@ function ensureAudio() {
   master.connect(audioContext.destination);
 
   sfxInput = audioContext.createGain();
+  sfxInput.gain.value = userSettings.sfxVolume / 100;
   const dry = audioContext.createGain();
   dry.gain.value = 0.72;
   sfxInput.connect(dry).connect(master);
@@ -2274,7 +2338,7 @@ async function startAudio() {
   // Safari only has one HTML media element competing for playback resources.
   const resumePlayback = audioContext.state === "suspended" ? audioContext.resume() : Promise.resolve();
   void startRollingSample();
-  backgroundMusic.volume = 0.5;
+  backgroundMusic.volume = userSettings.musicVolume / 100;
   backgroundMusic.muted = musicMuted;
   const musicPlayback = musicMuted ? Promise.resolve() : backgroundMusic.play();
   await resumePlayback;
@@ -2576,6 +2640,10 @@ window.addEventListener("keydown", (event) => {
 
   const controlledKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyW", "KeyA", "KeyS", "KeyD", "KeyR", "Escape", "Space"];
   if (controlledKeys.includes(event.code)) event.preventDefault();
+  if (event.code === "Escape" && !settingsOverlay.classList.contains("hidden")) {
+    closeSettings();
+    return;
+  }
   if (event.code === "Space" && state === "overlay") {
     if (!event.repeat) {
       if (!complete.classList.contains("hidden")) advanceLevel();
@@ -2636,16 +2704,44 @@ canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 startButton.addEventListener("click", startGame);
 leaderboardButton.addEventListener("click", () => openLeaderboards(intro));
+settingsButton.addEventListener("click", () => openSettings(intro));
 restartButton.addEventListener("click", resetLevel);
 retryButton.addEventListener("click", resetLevel);
 againButton.addEventListener("click", advanceLevel);
 menuButton.addEventListener("click", openMenu);
 resumeButton.addEventListener("click", closeMenu);
 menuRestartButton.addEventListener("click", resetLevel);
+menuSettingsButton.addEventListener("click", () => openSettings(menuOverlay));
 menuLeaderboardButton.addEventListener("click", () => openLeaderboards(menuOverlay));
 menuMainMenuButton.addEventListener("click", returnToMainMenu);
 musicButton.addEventListener("click", toggleMusic);
 closeLeaderboardsButton.addEventListener("click", closeLeaderboards);
+closeSettingsButton.addEventListener("click", closeSettings);
+
+musicVolumeInput.addEventListener("input", () => {
+  userSettings.musicVolume = Number(musicVolumeInput.value);
+  persistSettings();
+});
+
+sfxVolumeInput.addEventListener("input", () => {
+  userSettings.sfxVolume = Number(sfxVolumeInput.value);
+  persistSettings();
+});
+
+sensitivityInput.addEventListener("input", () => {
+  userSettings.sensitivity = Number(sensitivityInput.value);
+  persistSettings();
+});
+
+invertHorizontalInput.addEventListener("change", () => {
+  userSettings.invertHorizontal = invertHorizontalInput.checked;
+  persistSettings();
+});
+
+invertVerticalInput.addEventListener("change", () => {
+  userSettings.invertVertical = invertVerticalInput.checked;
+  persistSettings();
+});
 
 leaderboardTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -2709,6 +2805,8 @@ backgroundMusic.addEventListener("error", () => {
   musicButton.title = "Music file could not be loaded";
 });
 
+syncSettingsControls();
+applyAudioSettings();
 buildLevel();
 resize();
 loading.classList.add("hidden");
