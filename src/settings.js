@@ -4,8 +4,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   musicVolume: 50,
   sfxVolume: 100,
   sensitivity: 100,
-  invertHorizontal: false,
-  invertVertical: false,
+  invertControls: false,
 });
 
 function clampNumber(value, minimum, maximum, fallback) {
@@ -14,12 +13,12 @@ function clampNumber(value, minimum, maximum, fallback) {
 }
 
 export function normalizeSettings(value = {}) {
+  const legacyInversion = value.invertHorizontal === true || value.invertVertical === true;
   return {
     musicVolume: clampNumber(value.musicVolume, 0, 100, DEFAULT_SETTINGS.musicVolume),
     sfxVolume: clampNumber(value.sfxVolume, 0, 100, DEFAULT_SETTINGS.sfxVolume),
     sensitivity: clampNumber(value.sensitivity, 50, 150, DEFAULT_SETTINGS.sensitivity),
-    invertHorizontal: value.invertHorizontal === true,
-    invertVertical: value.invertVertical === true,
+    invertControls: value.invertControls === true || legacyInversion,
   };
 }
 

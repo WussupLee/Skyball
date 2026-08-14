@@ -47,8 +47,7 @@ const sfxVolumeInput = root.querySelector("#sfx-volume");
 const sfxVolumeValue = root.querySelector("#sfx-volume-value");
 const sensitivityInput = root.querySelector("#control-sensitivity");
 const sensitivityValue = root.querySelector("#control-sensitivity-value");
-const invertHorizontalInput = root.querySelector("#invert-horizontal");
-const invertVerticalInput = root.querySelector("#invert-vertical");
+const invertControlsInput = root.querySelector("#invert-controls");
 const startButton = root.querySelector("#start-btn");
 const retryButton = root.querySelector("#retry-btn");
 const againButton = root.querySelector("#again-btn");
@@ -1403,8 +1402,7 @@ function syncSettingsControls() {
   sfxVolumeValue.value = `${Math.round(userSettings.sfxVolume)}%`;
   sensitivityInput.value = String(userSettings.sensitivity);
   sensitivityValue.value = `${Math.round(userSettings.sensitivity)}%`;
-  invertHorizontalInput.checked = userSettings.invertHorizontal;
-  invertVerticalInput.checked = userSettings.invertVertical;
+  invertControlsInput.checked = userSettings.invertControls;
 }
 
 function applyAudioSettings() {
@@ -1544,8 +1542,10 @@ function inputVector() {
   if (keys.has("ArrowDown") || keys.has("KeyS")) vertical += 1;
   horizontal = THREE.MathUtils.clamp(horizontal + touchTilt.x, -1, 1);
   vertical = THREE.MathUtils.clamp(vertical + touchTilt.y, -1, 1);
-  if (userSettings.invertHorizontal) horizontal *= -1;
-  if (userSettings.invertVertical) vertical *= -1;
+  if (userSettings.invertControls) {
+    horizontal *= -1;
+    vertical *= -1;
+  }
   return { horizontal, vertical };
 }
 
@@ -2733,13 +2733,8 @@ sensitivityInput.addEventListener("input", () => {
   persistSettings();
 });
 
-invertHorizontalInput.addEventListener("change", () => {
-  userSettings.invertHorizontal = invertHorizontalInput.checked;
-  persistSettings();
-});
-
-invertVerticalInput.addEventListener("change", () => {
-  userSettings.invertVertical = invertVerticalInput.checked;
+invertControlsInput.addEventListener("change", () => {
+  userSettings.invertControls = invertControlsInput.checked;
   persistSettings();
 });
 
